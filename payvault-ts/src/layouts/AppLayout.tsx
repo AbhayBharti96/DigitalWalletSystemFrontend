@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppDispatch, useTheme, useAuth, useClickOutside, useAppSelector } from '../shared/hooks'
-import { markAllRead, markRead } from '../store/notificationSlice'
+import { markAllRead, markRead, clearAll } from '../store/notificationSlice'
 import { timeAgo } from '../shared/utils'
 import { Icon8 } from '../shared/components/Icon8'
 
@@ -85,6 +85,21 @@ export default function AppLayout() {
 
   const isAdmin = user?.role === 'ADMIN'
   const initial = (user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!user?.id) {
+      setProfilePhoto(null)
+      return
+    }
+    const syncPhoto = () => {
+      const cached = localStorage.getItem(`payvault-profile-photo:${user.id}`)
+      setProfilePhoto(cached || null)
+    }
+    syncPhoto()
+    window.addEventListener('payvault-profile-photo-updated', syncPhoto)
+    return () => window.removeEventListener('payvault-profile-photo-updated', syncPhoto)
+  }, [user?.id])
 
   const SidebarInner = ({ onNav }: { onNav?: () => void }) => (
     <div className="flex flex-col h-full">
@@ -114,13 +129,27 @@ export default function AppLayout() {
       {/* User chip */}
       <div className="p-3 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg,#22c55e,#6366f1)' }}>{initial}</div>
+          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg,#22c55e,#6366f1)' }}>
+            {profilePhoto ? <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" /> : initial}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{user?.fullName || 'User'}</div>
             <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{user?.role}</div>
           </div>
         </div>
+        <button
+          onClick={() => {
+            onNav?.()
+            logout()
+          }}
+          className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-85"
+          style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--danger)' }}
+          aria-label="Sign out"
+        >
+          <Icon8 name="logout" size={16} />
+          <span>Sign Out</span>
+        </button>
       </div>
     </div>
   )
@@ -214,12 +243,20 @@ export default function AppLayout() {
                   >
                     <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
                       <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Notifications</span>
-                      {unreadCount > 0 && (
-                        <button onClick={() => dispatch(markAllRead())} className="text-xs font-medium"
-                          style={{ color: 'var(--brand)' }} aria-label="Mark all notifications as read">
-                          Mark all read
-                        </button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {unreadCount > 0 && (
+                          <button onClick={() => dispatch(markAllRead())} className="text-xs font-medium"
+                            style={{ color: 'var(--brand)' }} aria-label="Mark all notifications as read">
+                            Mark all read
+                          </button>
+                        )}
+                        {notifications.length > 0 && (
+                          <button onClick={() => dispatch(clearAll())} className="text-xs font-medium"
+                            style={{ color: 'var(--danger)' }} aria-label="Clear notification tray">
+                            Clear tray
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="max-h-72 overflow-y-auto" role="list">
                       {notifications.length === 0
@@ -261,8 +298,10 @@ export default function AppLayout() {
                 aria-label="User menu"
                 className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl transition-all hover:opacity-80"
                 style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-white text-xs"
-                  style={{ background: 'linear-gradient(135deg,#22c55e,#6366f1)' }}>{initial}</div>
+                <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center font-bold text-white text-xs"
+                  style={{ background: 'linear-gradient(135deg,#22c55e,#6366f1)' }}>
+                  {profilePhoto ? <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" /> : initial}
+                </div>
                 <span className="hidden sm:block text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
                   {user?.fullName?.split(' ')[0] || 'User'}
                 </span>

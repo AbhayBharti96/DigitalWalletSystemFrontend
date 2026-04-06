@@ -28,18 +28,29 @@ const StatCard: React.FC<{
   value: string
   sub?: React.ReactNode
   color?: string
+  iconColor?: string
   delay?: number
   isDark?: boolean
-}> = ({ icon, label, value, sub, color = 'var(--brand)', delay = 0, isDark = false }) => (
+  onClick?: () => void
+}> = ({ icon, label, value, sub, color = 'var(--brand)', iconColor, delay = 0, isDark = false, onClick }) => (
   <motion.div
     className="p-4 rounded-2xl"
     initial={{ opacity: 0, y: 18 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay }}
-    style={{ background: '#ffffff', border: '1px solid #cde5db', boxShadow: isDark ? 'none' : lightCardShadow }}
+    style={{
+      background: '#ffffff',
+      border: '1px solid #cde5db',
+      boxShadow: isDark ? 'none' : lightCardShadow,
+      cursor: onClick ? 'pointer' : 'default',
+    }}
+    onClick={onClick}
+    role={onClick ? 'button' : undefined}
+    tabIndex={onClick ? 0 : undefined}
+    onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick() } : undefined}
   >
     <div className="flex items-start justify-between mb-3">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: `${color}20` }}>{icon}</div>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ background: `${color}20`, color: iconColor ?? color }}>{icon}</div>
       <span className="text-xs px-2.5 py-1 rounded-full font-semibold" style={{ background: `${color}20`, color }}>
         Live
       </span>
@@ -68,14 +79,19 @@ export default function DashboardPage() {
   const KycIcon = kycI.icon
   const tierS = getTierStyle(summary?.tier)
   const TierIcon = getTierIcon(summary?.tier)
+  const currentTier = (summary?.tier ?? 'SILVER').toUpperCase()
+  const nextTier = summary?.nextTier?.toUpperCase()
+  const points = summary?.points ?? 0
+  const pointsToNextTier = summary?.pointsToNextTier ?? 0
+  const targetForNextTier = points + pointsToNextTier
+  const tierProgressPct = targetForNextTier > 0 ? Math.round((points / targetForNextTier) * 100) : 100
+  const nextTierStyle = getTierStyle(summary?.nextTier)
   const showKycBanner = user?.kycStatus === 'NOT_SUBMITTED'
 
   const tierProgressScale = (() => {
-    const pts = summary?.points ?? 0
-    const next = summary?.pointsToNextTier ?? 0
-    const denom = pts + next
-    const raw = denom > 0 ? pts / denom : 0
-    return Math.max(0.08, Math.min(1, raw))
+    const denom = targetForNextTier
+    const raw = denom > 0 ? points / denom : 1
+    return Math.max(0, Math.min(1, raw))
   })()
 
   return (
@@ -132,13 +148,13 @@ export default function DashboardPage() {
             </div>
             <div className="rounded-3xl p-4" style={{ background: '#f4f6f8', border: '1px solid #d5dee6', boxShadow: isDark ? 'none' : lightCardShadow }}>
               <div className="text-sm font-medium" style={{ color: '#9ea8ba' }}>Reward Points</div>
-              <div className="text-4xl leading-none font-black mt-2" style={{ color: '#0e1f3f' }}>{rLoad ? '...' : (summary?.points ?? 0).toLocaleString()}</div>
+              <div className="text-4xl leading-none font-black mt-2" style={{ color: '#0e1f3f' }}>{rLoad ? '...' : points.toLocaleString()}</div>
               <div
                 className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
-                style={{ background: '#fff2df', color: '#d7891e' }}
+                style={{ background: tierS.bg, color: tierS.text, border: `1px solid ${tierS.border}` }}
               >
                 <TierIcon fontSize="inherit" />
-                {(summary?.tier ?? 'SILVER').toUpperCase()} tier
+                {currentTier} tier
               </div>
             </div>
           </div>
@@ -166,18 +182,30 @@ export default function DashboardPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <StatCard icon={<Icon8 name="wallet" size={24} />} label="Wallet Balance" delay={0} isDark={isDark} value={wLoad ? '...' : formatCurrency(balance?.balance ?? 0)} sub={`Status: ${balance?.status ?? 'INACTIVE'}`} />
+        <StatCard icon={<Icon8 name="wallet" size={24} />} label="Wallet Balance" delay={0} isDark={isDark} value={wLoad ? '...' : formatCurrency(balance?.balance ?? 0)} sub={`Status: ${balance?.status ?? 'INACTIVE'}`} onClick={() => navigate('/wallet')} />
         <StatCard
           icon={<Icon8 name="rewards" size={24} />}
           label="Reward Points"
-          color="#f59e0b"
+          color={tierS.text}
+          iconColor={tierS.text}
           delay={0.05}
           isDark={isDark}
-          value={rLoad ? '...' : (summary?.points ?? 0).toLocaleString()}
-          sub={<span className="inline-flex items-center gap-1"><TierIcon fontSize="inherit" /> {(summary?.tier ?? 'SILVER').toUpperCase()}</span>}
+          value={rLoad ? '...' : points.toLocaleString()}
+          sub={<span className="inline-flex items-center gap-1" style={{ color: tierS.text }}><TierIcon fontSize="inherit" /> {currentTier}</span>}
+          onClick={() => navigate('/rewards')}
         />
-        <StatCard icon={<Icon8 name="target" size={24} />} label="Next Tier Progress" color="#6366f1" delay={0.1} isDark={isDark} value={rLoad ? '...' : `${(summary?.pointsToNextTier ?? 0).toLocaleString()} pts`} sub={summary?.nextTier ? `Needed to reach ${summary.nextTier}` : 'Max tier unlocked'} />
-        <StatCard icon={<Icon8 name="shield" size={24} />} label="KYC Status" color={kycI.color} delay={0.15} isDark={isDark} value={user?.kycStatus?.replace('_', ' ') ?? '-'} sub={kycI.label} />
+        <StatCard
+          icon={<Icon8 name="target" size={24} />}
+          label="Next Tier Progress"
+          color={nextTier ? nextTierStyle.text : '#6366f1'}
+          iconColor={nextTier ? nextTierStyle.text : '#6366f1'}
+          delay={0.1}
+          isDark={isDark}
+          value={rLoad ? '...' : (nextTier ? `${tierProgressPct}%` : '100%')}
+          sub={nextTier ? `${points.toLocaleString()} / ${targetForNextTier.toLocaleString()} pts to ${nextTier}` : 'Max tier unlocked'}
+          onClick={() => navigate('/rewards')}
+        />
+        <StatCard icon={<Icon8 name="shield" size={24} />} label="KYC Status" color={kycI.color} delay={0.15} isDark={isDark} value={user?.kycStatus?.replace('_', ' ') ?? '-'} sub={kycI.label} onClick={() => navigate('/kyc')} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4">
@@ -211,20 +239,22 @@ export default function DashboardPage() {
         >
           <h3 className="text-xl leading-tight font-bold mb-4" style={{ color: '#1d2b44' }}>Loyalty Tier</h3>
           <div className="text-center">
-            <div className="text-5xl mb-1"><TierIcon fontSize="inherit" /></div>
-            <div className="font-black text-lg" style={{ color: tierS.text }}>{summary?.tier ?? 'SILVER'}</div>
-            <div className="text-xs mt-1 mb-3" style={{ color: '#7d8a9e' }}>{summary?.points ?? 0} total points</div>
-            {summary?.nextTier && (
+            <div className="mb-2 inline-flex items-center justify-center rounded-2xl p-3" style={{ background: tierS.bg, color: tierS.text, border: `1px solid ${tierS.border}` }}>
+              <span className="inline-flex text-[44px] leading-none" aria-hidden="true"><TierIcon fontSize="inherit" /></span>
+            </div>
+            <div className="font-black text-lg" style={{ color: tierS.text }}>{currentTier}</div>
+            <div className="text-xs mt-1 mb-3" style={{ color: '#7d8a9e' }}>{points.toLocaleString()} total points</div>
+            {nextTier && (
               <div>
                 <div className="flex justify-between text-xs mb-1" style={{ color: '#7d8a9e' }}>
-                  <span>{summary.tier}</span>
-                  <span>{summary.nextTier}</span>
+                  <span>{currentTier}</span>
+                  <span>{nextTier}</span>
                 </div>
                 <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: '#dce4ea' }}>
                   <motion.div
                     className="h-full rounded-full"
                     style={{
-                      background: 'linear-gradient(90deg, var(--brand), #4ade80)',
+                      background: `linear-gradient(90deg, ${tierS.text}, ${nextTierStyle.text})`,
                       width: '100%',
                       transformOrigin: 'left',
                     }}
@@ -233,7 +263,10 @@ export default function DashboardPage() {
                     transition={{ delay: 0.5, duration: 1 }}
                   />
                 </div>
-                <div className="text-xs mt-1 text-right" style={{ color: '#7d8a9e' }}>{summary.pointsToNextTier} pts to {summary.nextTier}</div>
+                <div className="text-xs mt-1" style={{ color: '#7d8a9e' }}>
+                  {points.toLocaleString()} / {targetForNextTier.toLocaleString()} pts
+                </div>
+                <div className="text-xs mt-0.5 text-right" style={{ color: '#7d8a9e' }}>{pointsToNextTier.toLocaleString()} pts to {nextTier}</div>
               </div>
             )}
           </div>
@@ -263,7 +296,7 @@ export default function DashboardPage() {
               key={a.label}
               onClick={() => navigate(a.to)}
               className="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all"
-              style={{ background: `${a.color}10`, border: `1px solid ${a.color}25` }}
+              style={{ background: `${a.color}10`, border: `1px solid ${a.color}25`, color: a.color }}
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.32 + i * 0.05 }}

@@ -1,26 +1,48 @@
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import type { KycStatus, RewardTier, Transaction, TxType } from '../types'
-import type { ComponentType } from 'react'
-import type { SvgIconProps } from '@mui/material/SvgIcon'
-import CheckCircle from '@mui/icons-material/CheckCircle'
-import HourglassEmpty from '@mui/icons-material/HourglassEmpty'
-import Cancel from '@mui/icons-material/Cancel'
-import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined'
-import HelpOutline from '@mui/icons-material/HelpOutline'
-import StarBorder from '@mui/icons-material/StarBorder'
-import Star from '@mui/icons-material/Star'
-import Diamond from '@mui/icons-material/Diamond'
-import WorkspacePremium from '@mui/icons-material/WorkspacePremium'
-import TrendingUp from '@mui/icons-material/TrendingUp'
-import SwapHoriz from '@mui/icons-material/SwapHoriz'
-import TrendingDown from '@mui/icons-material/TrendingDown'
-import AccountBalanceWallet from '@mui/icons-material/AccountBalanceWallet'
-import CardGiftcard from '@mui/icons-material/CardGiftcard'
-import CreditCard from '@mui/icons-material/CreditCard'
+import { createElement } from 'react'
+import type { ComponentType, CSSProperties } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import {
+  Award,
+  CircleCheck,
+  CircleHelp,
+  CircleX,
+  CreditCard,
+  FileText,
+  Gem,
+  Gift,
+  Hourglass,
+  Star,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+  ArrowRightLeft,
+} from 'lucide-react'
 dayjs.extend(relativeTime)
 
-export type PayVaultIcon = ComponentType<SvgIconProps>
+export type PayVaultIconProps = {
+  fontSize?: 'inherit' | 'small' | 'medium' | 'large'
+  className?: string
+  style?: CSSProperties
+}
+export type PayVaultIcon = ComponentType<PayVaultIconProps>
+
+const iconSizeForFont = (fontSize: PayVaultIconProps['fontSize']) => {
+  if (fontSize === 'inherit') return '1em'
+  if (fontSize === 'small') return 20
+  if (fontSize === 'large') return 35
+  return 24
+}
+
+const toPayVaultIcon = (Icon: LucideIcon): PayVaultIcon => ({ fontSize = 'medium', className, style }) =>
+  createElement(Icon, {
+    size: iconSizeForFont(fontSize),
+    className,
+    style,
+    strokeWidth: 2.1,
+  })
 
 export const formatCurrency = (amount: number, currency = 'INR') =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency, minimumFractionDigits: 2 }).format(amount || 0)
@@ -37,30 +59,30 @@ export const getTierStyle = (tier?: RewardTier | string) => ({
 }[tier as RewardTier] || { bg: '#f1f5f9', text: '#64748b', border: '#cbd5e1', glow: 'none' })
 
 const TIER_ICONS: Partial<Record<RewardTier, PayVaultIcon>> = {
-  SILVER: StarBorder,
-  GOLD: Star,
-  PLATINUM: Diamond,
+  SILVER: toPayVaultIcon(Star),
+  GOLD: toPayVaultIcon(Star),
+  PLATINUM: toPayVaultIcon(Gem),
 }
-const DEFAULT_TIER_ICON: PayVaultIcon = WorkspacePremium
+const DEFAULT_TIER_ICON: PayVaultIcon = toPayVaultIcon(Award)
 
 export const getTierIcon = (tier?: string): PayVaultIcon =>
   (tier ? TIER_ICONS[tier as RewardTier] ?? DEFAULT_TIER_ICON : DEFAULT_TIER_ICON)
 
 export const getKycInfo = (status?: KycStatus) => ({
-  APPROVED: { label: 'KYC Verified', color: '#22c55e', bg: '#dcfce7', icon: CheckCircle },
-  PENDING: { label: 'KYC Under Review', color: '#f59e0b', bg: '#fef3c7', icon: HourglassEmpty },
-  REJECTED: { label: 'KYC Rejected', color: '#ef4444', bg: '#fee2e2', icon: Cancel },
-  NOT_SUBMITTED: { label: 'KYC Not Submitted', color: '#6366f1', bg: '#ede9fe', icon: DescriptionOutlined },
-}[status ?? 'NOT_SUBMITTED'] || { label: 'Unknown', color: '#94a3b8', bg: '#f1f5f9', icon: HelpOutline })
+  APPROVED: { label: 'KYC Verified', color: '#22c55e', bg: '#dcfce7', icon: toPayVaultIcon(CircleCheck) },
+  PENDING: { label: 'KYC Under Review', color: '#f59e0b', bg: '#fef3c7', icon: toPayVaultIcon(Hourglass) },
+  REJECTED: { label: 'KYC Rejected', color: '#ef4444', bg: '#fee2e2', icon: toPayVaultIcon(CircleX) },
+  NOT_SUBMITTED: { label: 'KYC Not Submitted', color: '#6366f1', bg: '#ede9fe', icon: toPayVaultIcon(FileText) },
+}[status ?? 'NOT_SUBMITTED'] || { label: 'Unknown', color: '#94a3b8', bg: '#f1f5f9', icon: toPayVaultIcon(CircleHelp) })
 
 const TX_ICONS: Partial<Record<TxType, PayVaultIcon>> = {
-  TOPUP: TrendingUp,
-  TRANSFER: SwapHoriz,
-  WITHDRAW: TrendingDown,
-  CASHBACK: AccountBalanceWallet,
-  REDEEM: CardGiftcard,
+  TOPUP: toPayVaultIcon(TrendingUp),
+  TRANSFER: toPayVaultIcon(ArrowRightLeft),
+  WITHDRAW: toPayVaultIcon(TrendingDown),
+  CASHBACK: toPayVaultIcon(Wallet),
+  REDEEM: toPayVaultIcon(Gift),
 }
-const DEFAULT_TX_ICON: PayVaultIcon = CreditCard
+const DEFAULT_TX_ICON: PayVaultIcon = toPayVaultIcon(CreditCard)
 
 export const getTxIcon = (type?: TxType): PayVaultIcon => (type ? TX_ICONS[type] ?? DEFAULT_TX_ICON : DEFAULT_TX_ICON)
 

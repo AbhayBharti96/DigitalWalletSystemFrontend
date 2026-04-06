@@ -2,12 +2,20 @@ import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import toast from 'react-hot-toast'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import { authService } from '../../core/api'
 import { getApiErrorMessage } from '../../shared/apiErrors'
+import { Icon8 } from '../../shared/components/Icon8'
 
 type Step = 0 | 1 | 2
+
+const getPasswordStrength = (password: string) => {
+  let score = 0
+  if (password.length >= 8) score += 1
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1
+  if (/\d/.test(password)) score += 1
+  if (/[@$!%*?&]/.test(password)) score += 1
+  return score
+}
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate()
@@ -19,6 +27,9 @@ export default function ForgotPasswordPage() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
+  const strength = getPasswordStrength(newPassword)
+  const strengthLabel = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'][strength]
+  const strengthColor = ['#ef4444', '#f97316', '#f59e0b', '#22c55e', '#16a34a'][strength]
 
   const sendOtp = async (e: FormEvent) => {
     e.preventDefault()
@@ -210,12 +221,28 @@ export default function ForgotPasswordPage() {
                   style={{ color: 'var(--text-muted)' }}
                 >
                   {showPass ? (
-                    <VisibilityOffOutlinedIcon sx={{ fontSize: 18, color: 'var(--text-muted)', opacity: 0.85 }} />
+                    <Icon8 name="eyeOff" size={18} className="opacity-80" />
                   ) : (
-                    <VisibilityOutlinedIcon sx={{ fontSize: 18, color: 'var(--text-muted)', opacity: 0.85 }} />
+                    <Icon8 name="eye" size={18} className="opacity-80" />
                   )}
                 </button>
               </div>
+              {newPassword && (
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-1.5">
+                    {[0, 1, 2, 3].map(i => (
+                      <div
+                        key={i}
+                        className="h-1.5 flex-1 rounded-full"
+                        style={{ background: i < strength ? strengthColor : 'var(--border)' }}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-xs font-semibold" style={{ color: strengthColor }}>
+                    Strength: {strengthLabel}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

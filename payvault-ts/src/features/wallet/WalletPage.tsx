@@ -301,7 +301,7 @@ export default function WalletPage() {
                 whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                 className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all inline-flex items-center gap-2"
                 style={{ background: btn.bg, border: '1px solid rgba(255,255,255,0.1)' }}>
-                <Icon8 name={btn.icon as React.ComponentProps<typeof Icon8>['name']} size={16} />
+                <Icon8 name={btn.icon as React.ComponentProps<typeof Icon8>['name']} size={16} color="#ffffff" />
                 {btn.label}
               </motion.button>
             ))}
@@ -339,7 +339,7 @@ export default function WalletPage() {
                       style={{ background: 'var(--bg-primary)' }}
                       initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                        style={{ background: credit ? '#dcfce7' : '#fee2e2' }}>
+                        style={{ background: credit ? '#dcfce7' : '#fee2e2', color: credit ? '#15803d' : '#b91c1c' }}>
                         <TxIcon fontSize="inherit" />
                       </div>
                       <div className="flex-1 min-w-0">

@@ -2,8 +2,6 @@ import { useState, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
 import { useAppDispatch, useAppSelector } from '../../shared/hooks'
 import { signupUser, sendOtpThunk, verifyOtpThunk } from '../../store/authSlice'
 import { addNotification } from '../../store/notificationSlice'
@@ -13,14 +11,24 @@ type Step = 0 | 1
 interface FormState { fullName: string; email: string; phone: string; password: string; confirm: string }
 interface Errors { [k: string]: string }
 
+const getPasswordStrength = (password: string) => {
+  let score = 0
+  if (password.length >= 8) score += 1
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score += 1
+  if (/\d/.test(password)) score += 1
+  if (/[@$!%*?&]/.test(password)) score += 1
+  return score
+}
+
 const validate = (f: FormState): Errors => {
   const e: Errors = {}
-  if (f.fullName.length < 2) e.fullName = 'At least 2 characters required'
+  if (f.fullName.trim().length < 2) e.fullName = 'At least 2 characters required'
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Invalid email address'
-  if (!/^[0-9]{10,15}$/.test(f.phone)) e.phone = '10–15 digit phone number'
+  if (!/^[0-9]{10}$/.test(f.phone)) e.phone = 'Phone number must be exactly 10 digits'
   if (f.password.length < 8) e.password = 'Minimum 8 characters'
-  else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(f.password))
+  else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(f.password)) {
     e.password = 'Must include A-Z, a-z, 0-9, and @$!%*?&'
+  }
   if (f.password !== f.confirm) e.confirm = 'Passwords do not match'
   return e
 }
@@ -36,53 +44,77 @@ export default function SignupPage() {
   const [errors, setErrors] = useState<Errors>({})
   const [otp, setOtp] = useState('')
   const [showPass, setShowPass] = useState(false)
+  const strength = getPasswordStrength(form.password)
+  const strengthLabel = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'][strength]
+  const strengthColor = ['#ef4444', '#f97316', '#f59e0b', '#22c55e', '#16a34a'][strength]
 
   const setField = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm(p => ({ ...p, [k]: e.target.value }))
+    const nextValue = k === 'phone' ? e.target.value.replace(/\D/g, '').slice(0, 10) : e.target.value
+    setForm(p => ({ ...p, [k]: nextValue }))
     setErrors(p => ({ ...p, [k]: '' }))
   }
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault()
     const errs = validate(form)
-    if (Object.keys(errs).length) { setErrors(errs); return }
-    const res = await dispatch(signupUser({ fullName: form.fullName, email: form.email, phone: form.phone, password: form.password }))
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      return
+    }
+
+    const res = await dispatch(signupUser({
+      fullName: form.fullName.trim(),
+      email: form.email.trim(),
+      phone: form.phone,
+      password: form.password,
+    }))
+
     if (signupUser.fulfilled.match(res)) {
-      await dispatch(sendOtpThunk(form.email))
-      toast.success('Account created! Check your email for OTP')
+      const otpRes = await dispatch(sendOtpThunk(form.email.trim()))
+      if (sendOtpThunk.rejected.match(otpRes)) {
+        toast.error((otpRes.payload as string) || 'Account created, but OTP could not be sent. Please retry.')
+        return
+      }
+      toast.success('Account created. We sent an OTP to your email.')
       setStep(1)
-    } else { toast.error(res.payload as string || 'Signup failed') }
+    } else {
+      toast.error((res.payload as string) || 'Signup failed')
+    }
   }
 
   const handleVerify = async (e: FormEvent) => {
     e.preventDefault()
-    if (otp.length < 4) { toast.error('Enter the OTP sent to your email'); return }
-    const res = await dispatch(verifyOtpThunk({ email: form.email, otp }))
+    if (otp.length < 4) {
+      toast.error('Enter the OTP sent to your email')
+      return
+    }
+    const res = await dispatch(verifyOtpThunk({ email: form.email.trim(), otp }))
     if (verifyOtpThunk.fulfilled.match(res)) {
       dispatch(addNotification({
         type: 'success',
         title: 'Welcome to PayVault!',
         message: `Signed in as ${res.payload.user.fullName}`,
       }))
-      toast.success("Email verified — you're signed in!")
+      toast.success("Email verified. You're signed in.")
       navigate('/dashboard')
-    } else { toast.error(res.payload as string || 'Invalid OTP') }
+    } else {
+      toast.error((res.payload as string) || 'Invalid OTP')
+    }
   }
 
   const fields: Array<{ key: keyof FormState; label: string; type: string; placeholder: string; auto?: string }> = [
     { key: 'fullName', label: 'Full Name', type: 'text', placeholder: 'John Doe', auto: 'name' },
-    { key: 'email',    label: 'Email Address', type: 'email', placeholder: 'you@example.com', auto: 'email' },
-    { key: 'phone',    label: 'Phone Number', type: 'tel', placeholder: '9876543210', auto: 'tel' },
+    { key: 'email', label: 'Email Address', type: 'email', placeholder: 'you@example.com', auto: 'email' },
+    { key: 'phone', label: 'Phone Number', type: 'tel', placeholder: '9876543210', auto: 'tel' },
   ]
 
   return (
     <div>
       <div className="mb-6">
         <h2 className="text-2xl font-display font-bold" style={{ color: 'var(--text-primary)' }}>Create Account</h2>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Join PayVault today — it's free</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Join PayVault today - it is free</p>
       </div>
 
-      {/* Progress */}
       <div className="flex items-center mb-6" role="progressbar" aria-valuenow={step} aria-valuemin={0} aria-valuemax={1} aria-label="Signup progress">
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center flex-1">
@@ -97,9 +129,7 @@ export default function SignupPage() {
               </div>
               <span className="hidden sm:block text-xs" style={{ color: i === step ? 'var(--text-primary)' : 'var(--text-muted)' }}>{s}</span>
             </div>
-            {i < STEPS.length - 1 && (
-              <div className="flex-1 h-px mx-2" style={{ background: i < step ? 'var(--brand)' : 'var(--border)' }} />
-            )}
+            {i < STEPS.length - 1 && <div className="flex-1 h-px mx-2" style={{ background: i < step ? 'var(--brand)' : 'var(--border)' }} />}
           </div>
         ))}
       </div>
@@ -111,9 +141,17 @@ export default function SignupPage() {
             {fields.map(f => (
               <div key={f.key}>
                 <label htmlFor={f.key} className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>{f.label}</label>
-                <input id={f.key} type={f.type} placeholder={f.placeholder} autoComplete={f.auto}
-                  value={form[f.key]} onChange={setField(f.key)} className="input-field"
-                  aria-describedby={errors[f.key] ? `${f.key}-err` : undefined} />
+                <input
+                  id={f.key}
+                  type={f.type}
+                  placeholder={f.placeholder}
+                  autoComplete={f.auto}
+                  value={form[f.key]}
+                  onChange={setField(f.key)}
+                  className="input-field"
+                  maxLength={f.key === 'phone' ? 10 : undefined}
+                  aria-describedby={errors[f.key] ? `${f.key}-err` : undefined}
+                />
                 {errors[f.key] && <p id={`${f.key}-err`} className="text-xs mt-1" style={{ color: 'var(--danger)' }} role="alert">{errors[f.key]}</p>}
               </div>
             ))}
@@ -124,12 +162,25 @@ export default function SignupPage() {
                   autoComplete="new-password" value={form.password} onChange={setField('password')} className="input-field pr-10" />
                 <button type="button" onClick={() => setShowPass(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2"
                   aria-label={showPass ? 'Hide password' : 'Show password'} style={{ color: 'var(--text-muted)' }}>
-                  {showPass
-                    ? <VisibilityOffOutlinedIcon sx={{ fontSize: 18, color: 'var(--text-muted)', opacity: 0.85 }} />
-                    : <VisibilityOutlinedIcon sx={{ fontSize: 18, color: 'var(--text-muted)', opacity: 0.85 }} />
-                  }
+                  {showPass ? <Icon8 name="eyeOff" size={18} className="opacity-80" /> : <Icon8 name="eye" size={18} className="opacity-80" />}
                 </button>
               </div>
+              {form.password && (
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-1.5">
+                    {[0, 1, 2, 3].map(i => (
+                      <div
+                        key={i}
+                        className="h-1.5 flex-1 rounded-full"
+                        style={{ background: i < strength ? strengthColor : 'var(--border)' }}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-xs font-semibold" style={{ color: strengthColor }}>
+                    Strength: {strengthLabel}
+                  </div>
+                </div>
+              )}
               {errors.password && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }} role="alert">{errors.password}</p>}
             </div>
             <div>
@@ -139,10 +190,10 @@ export default function SignupPage() {
               {errors.confirm && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }} role="alert">{errors.confirm}</p>}
             </div>
             <button type="submit" disabled={loading} className="w-full btn-primary py-3 text-sm">
-              {loading ? 'Creating account…' : 'Create Account →'}
+              {loading ? 'Creating account...' : 'Create Account ->'}
             </button>
             <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Already have an account? <Link to="/login" className="font-semibold" style={{ color: 'var(--brand)' }}>Sign in →</Link>
+              Already have an account? <Link to="/login" className="font-semibold" style={{ color: 'var(--brand)' }}>Sign in -&gt;</Link>
             </p>
           </motion.form>
         )}
@@ -151,7 +202,9 @@ export default function SignupPage() {
           <motion.form key="s1" onSubmit={handleVerify} className="space-y-5"
             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <div className="text-center py-4">
-              <motion.div className="mb-3 inline-flex" animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 2 }}><Icon8 name="info" size={42} /></motion.div>
+              <motion.div className="mb-3 inline-flex" animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
+                <Icon8 name="info" size={42} />
+              </motion.div>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 We sent a code to<br /><strong style={{ color: 'var(--text-primary)' }}>{form.email}</strong>
               </p>
@@ -163,16 +216,22 @@ export default function SignupPage() {
                 className="input-field text-center text-3xl font-mono tracking-[0.4em]" maxLength={8} autoFocus />
             </div>
             <button type="submit" disabled={loading} className="w-full btn-primary py-3 text-sm">
-              {loading ? 'Verifying…' : 'Verify OTP →'}
+              {loading ? 'Verifying...' : 'Verify OTP ->'}
             </button>
             <div className="text-center">
-              <button type="button" onClick={() => dispatch(sendOtpThunk(form.email))} className="text-sm" style={{ color: 'var(--brand)' }}>
+              <button type="button" onClick={async () => {
+                const resendRes = await dispatch(sendOtpThunk(form.email.trim()))
+                if (sendOtpThunk.rejected.match(resendRes)) {
+                  toast.error((resendRes.payload as string) || 'Could not resend OTP')
+                  return
+                }
+                toast.success('OTP resent')
+              }} className="text-sm" style={{ color: 'var(--brand)' }}>
                 Resend OTP
               </button>
             </div>
           </motion.form>
         )}
-
       </AnimatePresence>
     </div>
   )

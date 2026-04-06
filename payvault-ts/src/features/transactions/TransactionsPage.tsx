@@ -4,19 +4,31 @@ import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector, useTheme } from '../../shared/hooks'
 import { fetchTransactions, fetchLedger } from '../../store/walletSlice'
+import { fetchRewardTransactions } from '../../store/rewardsSlice'
 import { walletService } from '../../core/api'
 import { formatCurrency, formatDate, getTransferCounterparty, getTxIcon, isCreditForUser } from '../../shared/utils'
 import { Skeleton, StatusBadge } from '../../shared/components/ui'
-import type { TxType } from '../../types'
+import type { TxType, RewardTransaction, Transaction } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
 
 const TX_TYPES: TxType[] = ['TOPUP', 'TRANSFER', 'WITHDRAW', 'CASHBACK', 'REDEEM']
+
+type RedeemRow =
+  | { kind: 'wallet'; id: number; createdAt: string; tx: Transaction }
+  | { kind: 'reward'; id: number; createdAt: string; tx: RewardTransaction }
+
+const classifyRedeemKind = (description?: string | null): 'CATALOG' | 'POINTS' => {
+  const text = (description || '').toLowerCase()
+  if (text.includes('cash') || text.includes('wallet') || text.includes('convert')) return 'POINTS'
+  return 'CATALOG'
+}
 
 export function TransactionsPage() {
   const dispatch = useAppDispatch()
   const { isDark } = useTheme()
   const { user } = useAppSelector(s => s.auth)
   const { transactions, ledger, txLoading } = useAppSelector(s => s.wallet)
+  const { transactions: rewardTxns } = useAppSelector(s => s.rewards)
   const [tab, setTab]         = useState<'txn' | 'ledger'>('txn')
   const [filter, setFilter]   = useState<TxType | 'ALL'>('ALL')
   const [page, setPage]       = useState(0)
@@ -24,7 +36,13 @@ export function TransactionsPage() {
   const [to, setTo]           = useState('')
   const [downloading, setDl]  = useState(false)
 
-  useEffect(() => { if (user?.id) { dispatch(fetchTransactions({ page, size: 12 })); dispatch(fetchLedger({})) } }, [dispatch, user?.id, page])
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(fetchTransactions({ page, size: 12 }))
+      dispatch(fetchLedger({}))
+      dispatch(fetchRewardTransactions())
+    }
+  }, [dispatch, user?.id, page])
 
   const download = async () => {
     if (!from || !to) { toast.error('Select a date range'); return }
@@ -37,7 +55,16 @@ export function TransactionsPage() {
     } catch { toast.error('Download failed') } finally { setDl(false) }
   }
 
-  const txList = (transactions?.content ?? []).filter(t => filter === 'ALL' || t.type === filter)
+  const walletTxList = transactions?.content ?? []
+  const txList = walletTxList.filter(t => filter === 'ALL' || t.type === filter)
+  const redeemRows: RedeemRow[] = [
+    ...walletTxList
+      .filter(t => t.type === 'REDEEM')
+      .map(t => ({ kind: 'wallet' as const, id: t.id, createdAt: t.createdAt, tx: t })),
+    ...rewardTxns
+      .filter(t => t.type === 'REDEEM')
+      .map(t => ({ kind: 'reward' as const, id: t.id, createdAt: t.createdAt, tx: t })),
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   const totalPages = transactions?.totalPages ?? 1
   const softMuted = isDark ? '#9fb4d7' : 'var(--text-muted)'
   const softSecondary = isDark ? '#bfd0ea' : 'var(--text-secondary)'
@@ -106,6 +133,71 @@ export function TransactionsPage() {
           <motion.div className="card overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {txLoading ? (
               <div className="p-5 space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="flex gap-3"><Skeleton className="w-10 h-10 rounded-xl" /><div className="flex-1 space-y-2"><Skeleton className="h-3 w-2/3" /><Skeleton className="h-3 w-1/2" /></div><Skeleton className="h-4 w-20" /></div>)}</div>
+            ) : filter === 'REDEEM' ? (
+              redeemRows.length === 0 ? (
+                <div className="text-center py-12"><div className="inline-flex mb-3"><Icon8 name="info" size={36} /></div><p style={{ color: 'var(--text-muted)' }}>No redeem history found</p></div>
+              ) : (
+                <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                  {redeemRows.map((row, i) => {
+                    if (row.kind === 'wallet') {
+                      const tx = row.tx
+                      return (
+                        <motion.div key={`wallet-redeem-${tx.id}`} className="flex items-center gap-4 px-5 py-4"
+                          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                            style={{ background: '#fee2e2', color: '#b91c1c' }}>
+                            <Icon8 name="wallet" size={18} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Redeem (Wallet)</span>
+                              <StatusBadge status={tx.status} />
+                            </div>
+                            <div className="text-xs truncate mt-0.5" style={{ color: softMuted }}>
+                              {tx.description || `Ref: ${tx.referenceId}`} · {formatDate(tx.createdAt)}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="font-bold text-sm" style={{ color: 'var(--danger)' }}>
+                              -{formatCurrency(tx.amount)}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )
+                    }
+
+                    const tx = row.tx
+                    const redeemKind = classifyRedeemKind(tx.description)
+                    return (
+                      <motion.div key={`reward-redeem-${tx.id}`} className="flex items-center gap-4 px-5 py-4"
+                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                          style={{ background: '#ede9fe', color: '#7c3aed' }}>
+                          <Icon8 name={redeemKind === 'POINTS' ? 'wallet' : 'rewards'} size={18} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                              {redeemKind === 'POINTS' ? 'Redeem (Points to Cash)' : 'Redeem (Catalog)'}
+                            </span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ background: 'var(--bg-primary)', color: softSecondary, border: '1px solid var(--border)' }}>
+                              REWARDS
+                            </span>
+                          </div>
+                          <div className="text-xs truncate mt-0.5" style={{ color: softMuted }}>
+                            {tx.description || 'Reward redemption'} · {formatDate(tx.createdAt)}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="font-bold text-sm" style={{ color: 'var(--danger)' }}>
+                            -{tx.points} pts
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              )
             ) : txList.length === 0 ? (
               <div className="text-center py-12"><div className="inline-flex mb-3"><Icon8 name="info" size={36} /></div><p style={{ color: 'var(--text-muted)' }}>No transactions found</p></div>
             ) : (

@@ -1,41 +1,31 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded'
-import VerifiedUserRoundedIcon from '@mui/icons-material/VerifiedUserRounded'
-import CardGiftcardRoundedIcon from '@mui/icons-material/CardGiftcardRounded'
-import LockRoundedIcon from '@mui/icons-material/LockRounded'
-import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded'
-import NotificationsRoundedIcon from '@mui/icons-material/NotificationsRounded'
-import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
-import BarChartRoundedIcon from '@mui/icons-material/BarChartRounded'
-import SmartphoneRoundedIcon from '@mui/icons-material/SmartphoneRounded'
-import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded'
 import { useAuth, useTheme } from '../../shared/hooks'
-import { Icon8 } from '../../shared/components/Icon8'
+import { Icon8, type Icon8Name } from '../../shared/components/Icon8'
 
 const features = [
   {
-    icon: AccountBalanceWalletRoundedIcon,
+    icon: 'wallet',
     title: 'Smart Wallet',
     text: 'Top up, transfer, and track every transaction with a clean real-time dashboard feel.',
   },
   {
-    icon: VerifiedUserRoundedIcon,
+    icon: 'shield',
     title: 'Fast KYC',
     text: 'Smooth onboarding with guided verification steps and clear approval status updates.',
   },
   {
-    icon: CardGiftcardRoundedIcon,
+    icon: 'rewards',
     title: 'Rewards Engine',
     text: 'Earn points on activity, unlock tiers, and redeem benefits with interactive cards.',
   },
   {
-    icon: LockRoundedIcon,
+    icon: 'lock',
     title: 'Secure Access',
     text: 'Built for trust with protected flows, payment verification, and role-based screens.',
   },
-] as const
+] as const satisfies ReadonlyArray<{ icon: Icon8Name; title: string; text: string }>
 
 const staticStats = [
   { label: 'Secure transactions', value: '99.9%' },
@@ -79,7 +69,7 @@ export default function LandingPage() {
           <header className="flex items-center justify-between rounded-full border px-5 py-3 backdrop-blur-xl" style={{ borderColor: 'rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.05)' }}>
             <button type="button" onClick={() => navigate('/')} className="flex items-center gap-3 text-left">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-lg" style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)' }}>
-                <AccountBalanceWalletRoundedIcon fontSize="small" />
+                <Icon8 name="wallet" size={20} />
               </div>
               <div>
                 <p className="text-lg font-semibold tracking-wide text-white">PayVault</p>
@@ -156,14 +146,14 @@ export default function LandingPage() {
                   style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)' }}
                 >
                   Launch PayVault
-                  <ArrowForwardRoundedIcon className="transition group-hover:translate-x-1" sx={{ fontSize: 20 }} />
+                  <Icon8 name="transfer" size={20} className="transition group-hover:translate-x-1" />
                 </button>
                 <button
                   onClick={() => document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   className="inline-flex items-center gap-2 rounded-2xl border px-6 py-3.5 font-medium text-white transition hover:bg-white/10"
                   style={{ borderColor: 'rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.05)' }}
                 >
-                  <NotificationsRoundedIcon sx={{ fontSize: 20 }} />
+                  <Icon8 name="bell" size={20} />
                   Watch Demo Flow
                 </button>
               </motion.div>
@@ -207,7 +197,7 @@ export default function LandingPage() {
                   <div className="mt-6 grid grid-cols-2 gap-4">
                     <div className="rounded-3xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)' }}>
                       <div className="flex items-center gap-3">
-                        <div className="rounded-2xl p-2" style={{ background: 'rgba(34,197,94,0.2)', color: '#86efac' }}><CreditCardRoundedIcon sx={{ fontSize: 20 }} /></div>
+                        <div className="rounded-2xl p-2" style={{ background: 'rgba(34,197,94,0.2)', color: '#86efac' }}><Icon8 name="wallet" size={20} /></div>
                         <div>
                           <p className="text-sm text-slate-300">Top up</p>
                           <p className="font-semibold text-white">Razorpay ready</p>
@@ -216,7 +206,7 @@ export default function LandingPage() {
                     </div>
                     <div className="rounded-3xl border p-4" style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)' }}>
                       <div className="flex items-center gap-3">
-                        <div className="rounded-2xl p-2" style={{ background: 'rgba(99,102,241,0.2)', color: '#c7d2fe' }}><CardGiftcardRoundedIcon sx={{ fontSize: 20 }} /></div>
+                        <div className="rounded-2xl p-2" style={{ background: 'rgba(99,102,241,0.2)', color: '#c7d2fe' }}><Icon8 name="rewards" size={20} /></div>
                         <div>
                           <p className="text-sm text-slate-300">Rewards</p>
                           <p className="font-semibold text-white">{pointsText}</p>
@@ -228,7 +218,7 @@ export default function LandingPage() {
                   <div className="mt-6 rounded-3xl border p-5" style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)' }}>
                     <div className="mb-4 flex items-center justify-between">
                       <p className="font-semibold text-white">Activity Overview</p>
-                      <BarChartRoundedIcon sx={{ fontSize: 20, color: '#94a3b8' }} />
+                      <Icon8 name="transactions" size={20} className="text-slate-400" />
                     </div>
                     <div className="flex h-40 items-end gap-3">
                       {[40, 72, 58, 90, 66, 108, 84].map((h, i) => (
@@ -242,16 +232,16 @@ export default function LandingPage() {
                 </div>
 
                 <FloatingCard className="-left-8 top-10 hidden lg:block">
-                  <VerifiedUserRoundedIcon sx={{ fontSize: 24, color: '#86efac' }} />
+                  <Icon8 name="shield" size={24} className="text-green-300" />
                 </FloatingCard>
                 <FloatingCard className="-right-6 top-24 hidden lg:block">
-                  <CardGiftcardRoundedIcon sx={{ fontSize: 24, color: '#c4b5fd' }} />
+                  <Icon8 name="rewards" size={24} className="text-violet-300" />
                 </FloatingCard>
                 <FloatingCard className="bottom-12 -left-10 hidden lg:block">
-                  <SmartphoneRoundedIcon sx={{ fontSize: 24, color: '#67e8f9' }} />
+                  <Icon8 name="overview" size={24} className="text-cyan-300" />
                 </FloatingCard>
                 <FloatingCard className="bottom-6 right-5 hidden lg:block">
-                  <CheckCircleRoundedIcon sx={{ fontSize: 24, color: '#93c5fd' }} />
+                  <Icon8 name="success" size={24} className="text-blue-300" />
                 </FloatingCard>
               </motion.div>
             </div>
@@ -267,7 +257,6 @@ export default function LandingPage() {
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {features.map((feature, idx) => {
-            const Icon = feature.icon
             return (
               <motion.div
                 key={feature.title}
@@ -279,7 +268,7 @@ export default function LandingPage() {
                 style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}
               >
                 <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ring-white/10" style={{ background: 'linear-gradient(145deg, rgba(34,197,94,0.2), rgba(129,140,248,0.2))', color: 'var(--brand)' }}>
-                  <Icon sx={{ fontSize: 30 }} className="transition group-hover:scale-110" />
+                  <Icon8 name={feature.icon} size={30} className="transition group-hover:scale-110" />
                 </div>
                 <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>{feature.title}</h3>
                 <p className="mt-3 leading-7" style={{ color: 'var(--text-secondary)' }}>{feature.text}</p>
@@ -300,15 +289,17 @@ export default function LandingPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {[
-              [VerifiedUserRoundedIcon, 'Protected access', 'Clear trust signals and premium visual hierarchy.'],
-              [CreditCardRoundedIcon, 'Top-up journeys', 'Elegant payment entry points with CTA emphasis.'],
-              [NotificationsRoundedIcon, 'Live feeling', 'Notification-ready top bar with polished action affordances.'],
-              [BarChartRoundedIcon, 'Modern UI', 'Gradients, motion, and device-friendly layout.'],
+              ['shield', 'Protected access', 'Clear trust signals and premium visual hierarchy.'],
+              ['wallet', 'Top-up journeys', 'Elegant payment entry points with CTA emphasis.'],
+              ['bell', 'Live feeling', 'Notification-ready top bar with polished action affordances.'],
+              ['transactions', 'Modern UI', 'Gradients, motion, and device-friendly layout.'],
             ].map(([Icon, title, text], i) => {
-              const Cmp = Icon as React.ComponentType<{ sx?: object; className?: string }>
+              const iconName = Icon as Icon8Name
               return (
                 <div key={i} className="rounded-[28px] border p-6" style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
-                  <Cmp sx={{ fontSize: 30, color: 'var(--brand)' }} />
+                  <div style={{ color: 'var(--brand)' }}>
+                    <Icon8 name={iconName} size={30} />
+                  </div>
                   <h3 className="mt-4 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{title as string}</h3>
                   <p className="mt-2" style={{ color: 'var(--text-secondary)' }}>{text as string}</p>
                 </div>

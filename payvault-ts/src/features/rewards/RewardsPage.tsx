@@ -323,7 +323,10 @@ export default function RewardsPage() {
                   <motion.div key={tx.id} className="flex items-center gap-4 px-5 py-4"
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}>
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                      style={{ background: (tx.type === 'EARN' || tx.type === 'BONUS') ? '#fef3c7' : '#ede9fe' }}>
+                      style={{
+                        background: (tx.type === 'EARN' || tx.type === 'BONUS') ? '#fef3c7' : '#ede9fe',
+                        color: (tx.type === 'EARN' || tx.type === 'BONUS') ? '#b45309' : '#7c3aed',
+                      }}>
                       <Icon8 name={({ EARN: 'star', BONUS: 'target', REDEEM: 'rewards', EXPIRE: 'clock' }[tx.type] || 'star') as React.ComponentProps<typeof Icon8>['name']} size={18} />
                     </div>
                     <div className="flex-1 min-w-0">

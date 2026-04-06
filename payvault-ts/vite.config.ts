@@ -24,6 +24,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // Keep tests in a dedicated directory inside src for clear separation.
+    include: ['src/tests/**/*.test.ts'],
   },
 })
