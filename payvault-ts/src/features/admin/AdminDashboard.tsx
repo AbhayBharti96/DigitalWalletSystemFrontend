@@ -43,7 +43,12 @@ export function AdminDashboard() {
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-5xl mx-auto">
-      <div><h1 className="text-xl font-display font-bold" style={{ color: 'var(--text-primary)' }}>Admin Dashboard</h1></div>
+      <div>
+        <h1 className="text-xl font-display font-bold" style={{ color: 'var(--text-primary)' }}>Admin Dashboard</h1>
+        <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+          Monitor wallet platform health with user growth, KYC pipeline status, approvals, and account activity metrics.
+        </p>
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <S icon={<Icon8 name="users" size={20} />} label="Total Users" value={stats?.totalUsers} delay={0} />
         <S icon={<Icon8 name="success" size={20} />} label="Active Users" value={stats?.activeUsers} color="#22c55e" delay={0.05} />

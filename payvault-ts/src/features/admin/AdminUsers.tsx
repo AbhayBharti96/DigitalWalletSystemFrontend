@@ -92,9 +92,9 @@ export function AdminUsers() {
 
       <div><h1 className="text-xl font-display font-bold" style={{ color: 'var(--text-primary)' }}>User Management</h1></div>
       <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm inline-flex" style={{ color: 'var(--text-muted)' }} aria-hidden="true"><Icon8 name="transactions" size={14} /></span>
+        <span className="absolute left-5 top-1/2 -translate-y-1/2 inline-flex pointer-events-none" style={{ color: 'var(--text-muted)' }} aria-hidden="true"><Icon8 name="search" size={16} /></span>
         <input type="search" placeholder="Search by name, email, or phone…" value={search} onChange={e => setSearch(e.target.value)}
-          className="input-field pl-9 py-2.5 text-sm" aria-label="Search users" />
+          className="input-field pl-14 py-2.5 text-sm" aria-label="Search users" />
       </div>
 
       <motion.div className="card overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

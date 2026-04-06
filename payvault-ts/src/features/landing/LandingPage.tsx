@@ -61,23 +61,43 @@ export default function LandingPage() {
     <div style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(to right, rgba(34,197,94,0.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(34,197,94,0.07) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at top, #0d3320 0%, #0a0f1e 40%, transparent 75%)' }} />
-        <div className="absolute -top-28 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl" style={{ background: 'rgba(34,197,94,0.2)' }} />
-        <div className="absolute right-0 top-20 h-64 w-64 rounded-full blur-3xl" style={{ background: 'rgba(99,102,241,0.18)' }} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: isDark
+              ? 'radial-gradient(circle at top, #0d3320 0%, #0a0f1e 40%, transparent 75%)'
+              : 'radial-gradient(circle at top, rgba(34,197,94,0.18) 0%, rgba(99,102,241,0.12) 45%, transparent 78%)',
+          }}
+        />
+        <div
+          className="absolute -top-28 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl"
+          style={{ background: isDark ? 'rgba(34,197,94,0.2)' : 'rgba(34,197,94,0.1)' }}
+        />
+        <div
+          className="absolute right-0 top-20 h-64 w-64 rounded-full blur-3xl"
+          style={{ background: isDark ? 'rgba(99,102,241,0.18)' : 'rgba(99,102,241,0.09)' }}
+        />
 
         <div className="relative mx-auto max-w-7xl px-6 py-8 lg:px-10">
-          <header className="flex items-center justify-between rounded-full border px-5 py-3 backdrop-blur-xl" style={{ borderColor: 'rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.05)' }}>
+          <header
+            className="flex items-center justify-between rounded-full border px-5 py-3 backdrop-blur-xl"
+            style={{
+              borderColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.22)',
+              background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.55)',
+              boxShadow: isDark ? 'inset 0 1px 0 rgba(255,255,255,0.08)' : 'inset 0 1px 0 rgba(255,255,255,0.85)',
+            }}
+          >
             <button type="button" onClick={() => navigate('/')} className="flex items-center gap-3 text-left">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-lg" style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)' }}>
                 <Icon8 name="wallet" size={20} />
               </div>
               <div>
-                <p className="text-lg font-semibold tracking-wide text-white">PayVault</p>
-                <p className="text-xs text-slate-300">Digital wallet with KYC and rewards</p>
+                <p className="text-lg font-semibold tracking-wide" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>PayVault</p>
+                <p className="text-xs" style={{ color: isDark ? '#cbd5e1' : '#0f172a' }}>Digital wallet with KYC and rewards</p>
               </div>
             </button>
 
-            <nav className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
+            <nav className="hidden items-center gap-8 text-sm md:flex" style={{ color: isDark ? '#cbd5e1' : '#0f172a' }}>
               <a href="#features" className="transition hover:text-white">Features</a>
               <a href="#security" className="transition hover:text-white">Security</a>
               <a href="#dashboard" className="transition hover:text-white">Dashboard</a>
@@ -86,8 +106,12 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={toggle}
-                className="rounded-full border px-3 py-2 text-slate-200 transition hover:bg-white/10 inline-flex items-center gap-1.5 text-xs font-medium"
-                style={{ borderColor: 'rgba(255,255,255,0.18)' }}
+                className="rounded-full border px-3 py-2 transition hover:bg-white/10 inline-flex items-center gap-1.5 text-xs font-medium"
+                style={{
+                  color: isDark ? '#e2e8f0' : '#0f172a',
+                  borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(15,23,42,0.25)',
+                  background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.72)',
+                }}
                 aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 <Icon8 name={isDark ? 'sun' : 'moon'} size={16} />
@@ -95,8 +119,12 @@ export default function LandingPage() {
               </button>
               <button
                 onClick={() => navigate(accessToken ? '/dashboard' : '/login')}
-                className="rounded-full border px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10"
-                style={{ borderColor: 'rgba(255,255,255,0.18)' }}
+                className="rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-white/10"
+                style={{
+                  color: isDark ? '#e2e8f0' : '#0f172a',
+                  borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(15,23,42,0.25)',
+                  background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.72)',
+                }}
               >
                 {accessToken ? 'Dashboard' : 'Sign in'}
               </button>
@@ -116,7 +144,8 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.65, delay: 0.05 }}
-                className="max-w-3xl text-5xl font-bold leading-tight text-white md:text-6xl"
+                className="max-w-3xl text-5xl font-bold leading-tight md:text-6xl"
+                style={{ color: isDark ? '#ffffff' : '#0f172a' }}
               >
                 Secure money movement,
                 <span className="bg-gradient-to-r from-green-300 via-green-400 to-indigo-300 bg-clip-text text-transparent">
@@ -129,9 +158,10 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.65, delay: 0.12 }}
-                className="mt-6 max-w-2xl text-lg leading-8 text-slate-300"
+                className="mt-6 max-w-2xl text-lg leading-8"
+                style={{ color: isDark ? '#cbd5e1' : '#0f172a' }}
               >
-                This landing is now usable: CTA buttons route into your auth/app flows, rewards are loaded from the real catalog endpoint, and logged-in users see live wallet/points values.
+                Your wallet is ready: add money, transfer instantly, track every transaction in real time, and manage balance with secure KYC-powered controls.
               </motion.p>
 
               <motion.div
@@ -150,8 +180,12 @@ export default function LandingPage() {
                 </button>
                 <button
                   onClick={() => document.getElementById('dashboard')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  className="inline-flex items-center gap-2 rounded-2xl border px-6 py-3.5 font-medium text-white transition hover:bg-white/10"
-                  style={{ borderColor: 'rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.05)' }}
+                  className="inline-flex items-center gap-2 rounded-2xl border px-6 py-3.5 font-medium transition hover:bg-white/10"
+                  style={{
+                    color: isDark ? '#ffffff' : '#0f172a',
+                    borderColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.25)',
+                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.65)',
+                  }}
                 >
                   <Icon8 name="bell" size={20} />
                   Watch Demo Flow
@@ -166,10 +200,13 @@ export default function LandingPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45, delay: 0.1 * idx }}
                     className="rounded-3xl border p-5 backdrop-blur-xl"
-                    style={{ borderColor: 'rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.06)' }}
+                    style={{
+                      borderColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(15,23,42,0.18)',
+                      background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.38)',
+                    }}
                   >
-                    <div className="text-2xl font-bold text-white">{item.value}</div>
-                    <div className="mt-1 text-sm text-slate-300">{item.label}</div>
+                    <div className="text-2xl font-bold" style={{ color: isDark ? '#ffffff' : '#0f172a' }}>{item.value}</div>
+                    <div className="mt-1 text-sm" style={{ color: isDark ? '#cbd5e1' : '#1e293b' }}>{item.label}</div>
                   </motion.div>
                 ))}
               </div>
@@ -252,7 +289,7 @@ export default function LandingPage() {
       <section id="features" className="mx-auto max-w-7xl px-6 py-6 lg:px-10 lg:py-10">
         <div className="mb-8 max-w-2xl">
           <p className="text-sm uppercase tracking-[0.25em]" style={{ color: 'var(--brand)' }}>Feature Highlights</p>
-          <h2 className="mt-3 text-3xl font-bold md:text-4xl" style={{ color: 'var(--text-primary)' }}>Interactive icon-based sections designed for PayVault</h2>
+          <h2 className="mt-3 text-3xl font-bold md:text-4xl" style={{ color: 'var(--text-primary)' }}>Interactive wallet-first sections built for PayVault users</h2>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -281,10 +318,10 @@ export default function LandingPage() {
       <section id="security" className="mx-auto max-w-7xl px-6 py-10 lg:px-10 lg:py-16">
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-[32px] border p-8" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}>
-            <p className="text-sm uppercase tracking-[0.25em]" style={{ color: 'var(--accent)' }}>Trust Layer</p>
-            <h2 className="mt-3 text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Built for a secure wallet experience</h2>
+            <p className="text-sm uppercase tracking-[0.25em]" style={{ color: 'var(--accent)' }}>Live Wallet Flows</p>
+            <h2 className="mt-3 text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Try every wallet action from one smooth experience</h2>
             <p className="mt-4 leading-7" style={{ color: 'var(--text-secondary)' }}>
-              The landing supports your real modules: authentication, KYC approval, transactions, wallet top-ups, and reward redemption.
+              Jump in and move through login, KYC, top-ups, transfers, transaction tracking, and rewards with interactive cards and clear next steps.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">

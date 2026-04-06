@@ -68,6 +68,7 @@ const authSlice = createSlice({
       if (state.user) {
         state.user.kycStatus = payload
         sessionStorage.setItem('user', JSON.stringify(state.user))
+        localStorage.setItem('user', JSON.stringify(state.user))
       }
     },
     clearError(state) { state.error = null },

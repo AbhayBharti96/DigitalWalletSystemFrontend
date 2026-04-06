@@ -111,9 +111,9 @@ export default function DashboardPage() {
             <h1 className="text-2xl lg:text-4xl leading-[1.1] font-extrabold max-w-xl" style={{ color: '#0c1a3a' }}>
               Manage your wallet, KYC status, and reward growth from one place.
             </h1>
-            <p className="mt-3 text-xs lg:text-sm leading-relaxed max-w-xl" style={{ color: '#4f6275' }}>
-              Your dashboard now feels more premium and action-focused, while continuing to use the same API flows for balance, reward summary, KYC routing, and wallet journeys.
-            </p>
+              <p className="mt-3 text-xs lg:text-sm leading-relaxed max-w-xl" style={{ color: '#4f6275' }}>
+                View live wallet balance, KYC status, reward points, and next-tier progress in one place with fast actions for top-up, transfer, and redemption.
+              </p>
             <div className="mt-4 flex flex-wrap gap-2.5">
               <button
                 onClick={() => navigate('/wallet')}

@@ -1,11 +1,12 @@
 import { useState, useEffect, FormEvent, useRef } from 'react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { useAppSelector, useNotify } from '../../shared/hooks'
-import { userService } from '../../core/api'
+import { useAppDispatch, useAppSelector, useNotify } from '../../shared/hooks'
+import { kycService, userService } from '../../core/api'
 import { getApiErrorMessage } from '../../shared/apiErrors'
 import { formatDate, getKycInfo } from '../../shared/utils'
 import type { UserProfile } from '../../types'
+import { updateKycStatus } from '../../store/authSlice'
 
 const profilePhotoKey = (userId?: number) => `payvault-profile-photo:${userId ?? 'anon'}`
 
@@ -18,6 +19,7 @@ const fileToDataUrl = (file: File): Promise<string> =>
   })
 
 export function ProfilePage() {
+  const dispatch = useAppDispatch()
   const { user } = useAppSelector(s => s.auth)
   const notify = useNotify()
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -38,9 +40,23 @@ export function ProfilePage() {
   const load = async () => {
     setLoading(true)
     try {
-      const { data } = await userService.getProfile(user!.id)
-      setProfile(data.data)
-      setForm({ name: data.data.fullName || '', phone: data.data.phone || '' })
+      const [{ data: profileResp }, { data: kycResp }] = await Promise.all([
+        userService.getProfile(user!.id),
+        kycService.status(user!.id),
+      ])
+
+      const liveKyc = kycResp?.data?.status
+      const mergedProfile: UserProfile = {
+        ...profileResp.data,
+        kycStatus: liveKyc ?? profileResp.data.kycStatus ?? user?.kycStatus,
+      }
+
+      setProfile(mergedProfile)
+      setForm({ name: mergedProfile.fullName || '', phone: mergedProfile.phone || '' })
+
+      if (liveKyc && liveKyc !== user?.kycStatus) {
+        dispatch(updateKycStatus(liveKyc))
+      }
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Could not load your profile right now.'))
     } finally {
@@ -111,7 +127,8 @@ export function ProfilePage() {
   }
 
   const p = profile || user
-  const kycI = getKycInfo(p?.kycStatus)
+  const effectiveKycStatus = user?.kycStatus ?? p?.kycStatus
+  const kycI = getKycInfo(effectiveKycStatus)
   const KycIcon = kycI.icon
   const initial = (p?.fullName?.[0] || 'U').toUpperCase()
 
@@ -152,7 +169,7 @@ export function ProfilePage() {
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: 'var(--brand-light)', color: 'var(--brand)' }}>{user?.role}</span>
             <span className="text-xs px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1" style={{ background: kycI.bg, color: kycI.color }}>
-              <KycIcon fontSize="inherit" /> {p?.kycStatus}
+              <KycIcon fontSize="inherit" /> {effectiveKycStatus}
             </span>
           </div>
         </div>
@@ -178,7 +195,7 @@ export function ProfilePage() {
       <motion.div className="card p-5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Account Information</h3>
         <dl className="grid sm:grid-cols-2 gap-4 text-sm">
-          {[['Email', p?.email], ['Phone', p?.phone || '-'], ['Status', p?.status || 'ACTIVE'], ['KYC', p?.kycStatus], ['Member Since', formatDate(p?.createdAt, 'DD MMM YYYY')], ['User ID', `#${user?.id}`]]
+          {[['Email', p?.email], ['Phone', p?.phone || '-'], ['Status', p?.status || 'ACTIVE'], ['KYC', effectiveKycStatus], ['Member Since', formatDate(p?.createdAt, 'DD MMM YYYY')], ['User ID', `#${user?.id}`]]
             .map(([k, v]) => (
               <div key={k as string}>
                 <dt className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{k}</dt>

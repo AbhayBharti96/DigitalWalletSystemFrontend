@@ -29,6 +29,7 @@ import {
   Sparkles,
   Star,
   Sun,
+  Search,
   Target,
   Users,
   Wallet,
@@ -66,6 +67,7 @@ export type Icon8Name =
   | 'calendar'
   | 'new'
   | 'blocked'
+  | 'search'
 
 const ICONS: Record<Icon8Name, LucideIcon> = {
   dashboard: LayoutDashboard,
@@ -99,6 +101,7 @@ const ICONS: Record<Icon8Name, LucideIcon> = {
   calendar: CalendarDays,
   new: Sparkles,
   blocked: Ban,
+  search: Search,
 }
 
 interface Icon8Props {

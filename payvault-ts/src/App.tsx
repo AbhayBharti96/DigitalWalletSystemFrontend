@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { useAppSelector, useAppDispatch } from './shared/hooks'
 import { seedNotifications } from './store/notificationSlice'
+import { kycService } from './core/api'
+import { updateKycStatus } from './store/authSlice'
 import { LoadingScreen, NotFoundPage } from './shared/components/ui'
 import AppLayout from './layouts/AppLayout'
 import AuthLayout from './layouts/AuthLayout'
@@ -20,21 +22,50 @@ const AdminDashboard   = lazy(() => import('./features/admin/AdminDashboard'))
 const AdminUsers       = lazy(() => import('./features/admin/AdminUsers'))
 const AdminKyc         = lazy(() => import('./features/admin/AdminKyc'))
 // ── Guards ─────────────────────────────────────────────────────────────────────
-const RequireAuth: React.FC<{ requireKyc?: boolean; adminOnly?: boolean }> = ({ requireKyc, adminOnly }) => {
+const RequireAuth: React.FC<{ requireKyc?: boolean; adminOnly?: boolean; kycReady?: boolean }> = ({ requireKyc, adminOnly, kycReady = true }) => {
   const { accessToken, user } = useAppSelector(s => s.auth)
   if (!accessToken) return <Navigate to="/login" replace />
   if (adminOnly && user?.role !== 'ADMIN') return <Navigate to="/dashboard" replace />
+  if (requireKyc && !kycReady) return <LoadingScreen />
   if (requireKyc && user?.kycStatus !== 'APPROVED') return <Navigate to="/kyc" replace />
   return <Outlet />
 }
 
 export default function App() {
   const dispatch = useAppDispatch()
-  const { accessToken } = useAppSelector(s => s.auth)
+  const { accessToken, user } = useAppSelector(s => s.auth)
+  const [kycReady, setKycReady] = useState(false)
 
   useEffect(() => {
     if (accessToken) dispatch(seedNotifications())
   }, [accessToken, dispatch])
+
+  useEffect(() => {
+    let active = true
+
+    const syncKycStatus = async () => {
+      if (!accessToken || !user?.id) {
+        if (active) setKycReady(true)
+        return
+      }
+
+      if (active) setKycReady(false)
+      try {
+        const { data } = await kycService.status(user.id)
+        const next = data?.data?.status
+        if (active && next && next !== user.kycStatus) {
+          dispatch(updateKycStatus(next))
+        }
+      } catch {
+        // Keep current user status if status API fails; do not block navigation forever.
+      } finally {
+        if (active) setKycReady(true)
+      }
+    }
+
+    void syncKycStatus()
+    return () => { active = false }
+  }, [accessToken, user?.id, user?.kycStatus, dispatch])
 
   return (
     <Suspense fallback={<LoadingScreen />}>
@@ -54,7 +85,7 @@ export default function App() {
             <Route path="/profile"   element={<ProfilePage />} />
 
             {/* KYC-gated routes */}
-            <Route element={<RequireAuth requireKyc />}>
+            <Route element={<RequireAuth requireKyc kycReady={kycReady} />}>
               <Route path="/wallet"       element={<WalletPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/rewards"      element={<RewardsPage />} />
