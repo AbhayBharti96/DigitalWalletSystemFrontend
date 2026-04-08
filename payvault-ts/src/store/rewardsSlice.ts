@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { RewardSummary, RewardItem, RewardTransaction } from '../types'
-import { rewardsService } from '../core/api'
+import { rewardsService } from '../services'
 import { getApiErrorMessage } from '../shared/apiErrors'
 import type { RootState } from './store'
 

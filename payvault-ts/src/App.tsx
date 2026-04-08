@@ -2,7 +2,7 @@ import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { useAppSelector, useAppDispatch } from './shared/hooks'
 import { seedNotifications } from './store/notificationSlice'
-import { kycService } from './core/api'
+import { kycService } from './services'
 import { updateKycStatus } from './store/authSlice'
 import { LoadingScreen, NotFoundPage } from './shared/components/ui'
 import AppLayout from './layouts/AppLayout'
@@ -21,6 +21,7 @@ const ProfilePage      = lazy(() => import('./features/profile/ProfilePage'))
 const AdminDashboard   = lazy(() => import('./features/admin/AdminDashboard'))
 const AdminUsers       = lazy(() => import('./features/admin/AdminUsers'))
 const AdminKyc         = lazy(() => import('./features/admin/AdminKyc'))
+const AdminCatalog     = lazy(() => import('./features/admin/AdminCatalog'))
 // ── Guards ─────────────────────────────────────────────────────────────────────
 const RequireAuth: React.FC<{ requireKyc?: boolean; adminOnly?: boolean; kycReady?: boolean }> = ({ requireKyc, adminOnly, kycReady = true }) => {
   const { accessToken, user } = useAppSelector(s => s.auth)
@@ -96,6 +97,7 @@ export default function App() {
               <Route path="/admin"        element={<AdminDashboard />} />
               <Route path="/admin/users"  element={<AdminUsers />} />
               <Route path="/admin/kyc"    element={<AdminKyc />} />
+              <Route path="/admin/catalog" element={<AdminCatalog />} />
             </Route>
           </Route>
         </Route>

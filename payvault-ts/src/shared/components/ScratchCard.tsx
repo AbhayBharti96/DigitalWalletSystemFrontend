@@ -175,6 +175,11 @@ const ScratchCanvas: React.FC<{
   }
 
   const onMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!('touches' in e) && !completed.current) {
+      const pos = getPos(e)
+      scratch(pos.x, pos.y)
+      return
+    }
     if (!isDrawing.current) return
     const pos = getPos(e)
     scratch(pos.x, pos.y)
@@ -195,7 +200,7 @@ const ScratchCanvas: React.FC<{
       onTouchMove={onMove}
       onTouchEnd={onUp}
       style={{ touchAction: 'none', cursor: 'crosshair' }}
-      aria-label="Scratch card - scratch to reveal your reward"
+      aria-label="Scratch card - hover or scratch to reveal your reward"
     />
   )
 }

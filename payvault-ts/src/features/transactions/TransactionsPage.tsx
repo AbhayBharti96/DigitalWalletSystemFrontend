@@ -5,11 +5,12 @@ import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector, useTheme } from '../../shared/hooks'
 import { fetchTransactions, fetchLedger } from '../../store/walletSlice'
 import { fetchRewardTransactions } from '../../store/rewardsSlice'
-import { walletService } from '../../core/api'
+import { walletService } from '../../services'
 import { formatCurrency, formatDate, getTransferCounterparty, getTxIcon, isCreditForUser } from '../../shared/utils'
 import { Skeleton, StatusBadge } from '../../shared/components/ui'
 import type { TxType, RewardTransaction, Transaction } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
+import { getFirstError, transactionDateRangeSchema } from '../../shared/validation'
 
 const TX_TYPES: TxType[] = ['TOPUP', 'TRANSFER', 'WITHDRAW', 'CASHBACK', 'REDEEM']
 
@@ -45,12 +46,13 @@ export function TransactionsPage() {
   }, [dispatch, user?.id, page])
 
   const download = async () => {
-    if (!from || !to) { toast.error('Select a date range'); return }
+    const dateRangeResult = transactionDateRangeSchema.safeParse({ from, to })
+    if (!dateRangeResult.success) { toast.error(getFirstError(dateRangeResult.error)); return }
     setDl(true)
     try {
-      const resp = await walletService.downloadStatement(user!.id, from, to)
+      const resp = await walletService.downloadStatement(user!.id, dateRangeResult.data.from, dateRangeResult.data.to)
       const url = URL.createObjectURL(resp.data as Blob)
-      const a = document.createElement('a'); a.href = url; a.download = `statement_${from}_${to}.csv`; a.click()
+      const a = document.createElement('a'); a.href = url; a.download = `statement_${dateRangeResult.data.from}_${dateRangeResult.data.to}.csv`; a.click()
       toast.success('Statement downloaded!')
     } catch { toast.error('Download failed') } finally { setDl(false) }
   }

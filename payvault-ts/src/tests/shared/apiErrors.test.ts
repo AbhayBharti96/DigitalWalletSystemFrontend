@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import axios from 'axios'
-import { getApiErrorMessage } from './apiErrors'
+import { getApiErrorMessage } from '@/shared/apiErrors'
 
 describe('getApiErrorMessage', () => {
   it('reads message from axios error response body', () => {

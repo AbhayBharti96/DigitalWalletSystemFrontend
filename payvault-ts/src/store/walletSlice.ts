@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { WalletBalance, Transaction, LedgerEntry, PageResponse, TransferRequest } from '../types'
-import { walletService } from '../core/api'
+import { walletService } from '../services'
 import { getApiErrorMessage } from '../shared/apiErrors'
 import type { RootState } from './store'
 

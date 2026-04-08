@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { useAppSelector } from '../../shared/hooks'
-import { adminService } from '../../core/api'
+import { adminService } from '../../services'
 import type { AdminDashboard as AdminDashboardType } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
 

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
 import type { UserProfile, KycStatus, LoginRequest, SignupRequest, VerifyOtpRequest } from '../types'
-import { authService, clearClientAuth } from '../core/api'
+import { authService, clearClientAuth } from '../services'
 import { getApiErrorMessage } from '../shared/apiErrors'
 
 interface AuthState {
@@ -64,6 +64,11 @@ const authSlice = createSlice({
       state.user = null; state.accessToken = null; state.refreshToken = null
       clearClientAuth()
     },
+    updateCurrentUser(state, { payload }: PayloadAction<UserProfile>) {
+      state.user = payload
+      sessionStorage.setItem('user', JSON.stringify(payload))
+      localStorage.setItem('user', JSON.stringify(payload))
+    },
     updateKycStatus(state, { payload }: PayloadAction<KycStatus>) {
       if (state.user) {
         state.user.kycStatus = payload
@@ -100,5 +105,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { logout, updateKycStatus, clearError, setTokens } = authSlice.actions
+export const { logout, updateCurrentUser, updateKycStatus, clearError, setTokens } = authSlice.actions
 export default authSlice.reducer

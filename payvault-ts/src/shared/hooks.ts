@@ -5,7 +5,7 @@ import type { RootState, AppDispatch } from '../store/store'
 import { toggleTheme } from '../store/themeSlice'
 import { logout } from '../store/authSlice'
 import { addNotification } from '../store/notificationSlice'
-import { authService } from '../core/api'
+import { authService } from '../services'
 import type { NotifType } from '../types'
 
 export const useAppDispatch = () => useDispatch<AppDispatch>()

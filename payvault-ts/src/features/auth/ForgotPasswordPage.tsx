@@ -2,9 +2,10 @@ import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { authService } from '../../core/api'
+import { authService } from '../../services'
 import { getApiErrorMessage } from '../../shared/apiErrors'
 import { Icon8 } from '../../shared/components/Icon8'
+import { emailSchema, forgotPasswordResetSchema, getFirstError, otpSchema } from '../../shared/validation'
 
 type Step = 0 | 1 | 2
 
@@ -33,14 +34,15 @@ export default function ForgotPasswordPage() {
 
   const sendOtp = async (e: FormEvent) => {
     e.preventDefault()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      toast.error('Enter a valid email address')
+    const emailResult = emailSchema.safeParse(email)
+    if (!emailResult.success) {
+      toast.error(getFirstError(emailResult.error))
       return
     }
 
     setLoading(true)
     try {
-      await authService.forgotPasswordOtp(email.trim())
+      await authService.forgotPasswordOtp(emailResult.data)
       toast.success('OTP sent to your email')
       setStep(1)
     } catch (err) {
@@ -52,14 +54,15 @@ export default function ForgotPasswordPage() {
 
   const verifyOtp = async (e: FormEvent) => {
     e.preventDefault()
-    if (otp.length < 4) {
-      toast.error('Enter the OTP sent to your email')
+    const otpResult = otpSchema.safeParse(otp)
+    if (!otpResult.success) {
+      toast.error(getFirstError(otpResult.error))
       return
     }
 
     setLoading(true)
     try {
-      const { data } = await authService.forgotPasswordVerify(email.trim(), otp)
+      const { data } = await authService.forgotPasswordVerify(email.trim(), otpResult.data)
       setResetToken(data.resetToken)
       toast.success('OTP verified')
       setStep(2)
@@ -72,22 +75,15 @@ export default function ForgotPasswordPage() {
 
   const resetPassword = async (e: FormEvent) => {
     e.preventDefault()
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters')
-      return
-    }
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(newPassword)) {
-      toast.error('Use A-Z, a-z, 0-9 and @$!%*?& in password')
-      return
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match')
+    const resetResult = forgotPasswordResetSchema.safeParse({ newPassword, confirmPassword })
+    if (!resetResult.success) {
+      toast.error(getFirstError(resetResult.error))
       return
     }
 
     setLoading(true)
     try {
-      await authService.resetPassword(resetToken, newPassword)
+      await authService.resetPassword(resetToken, resetResult.data.newPassword)
       toast.success('Password updated. Please sign in.')
       navigate('/login')
     } catch (err) {

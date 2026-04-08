@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAppSelector } from '../../shared/hooks'
-import { adminService } from '../../core/api'
+import { adminService } from '../../services'
 import { formatDate } from '../../shared/utils'
 import { Skeleton } from '../../shared/components/ui'
 import type { KycStatusResponse } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
+import { getFirstError, rejectionReasonSchema } from '../../shared/validation'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
@@ -65,16 +66,18 @@ export function AdminKyc() {
 
   const handle = async (approve: boolean) => {
     if (!selected || !user) return
-    if (!approve && !reason.trim()) {
-      toast.error('Provide a rejection reason')
+    const reasonResult = rejectionReasonSchema.safeParse(reason)
+    if (!approve && !reasonResult.success) {
+      toast.error(getFirstError(reasonResult.error))
       return
     }
+    const rejectionReason = reasonResult.success ? reasonResult.data : ''
     setActioning(true)
     try {
       if (approve) {
         await adminService.approveKyc(selected.kycId, role, user.email!)
       } else {
-        await adminService.rejectKyc(selected.kycId, reason, role, user.email!)
+        await adminService.rejectKyc(selected.kycId, rejectionReason, role, user.email!)
       }
       toast.success(approve ? 'KYC Approved' : 'KYC Rejected')
       setSelected(null)

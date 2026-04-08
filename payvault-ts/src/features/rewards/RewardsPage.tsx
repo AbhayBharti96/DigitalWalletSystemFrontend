@@ -9,6 +9,25 @@ import { Modal, Skeleton } from '../../shared/components/ui'
 import { formatCurrency, formatDate, getTierStyle, getTierIcon } from '../../shared/utils'
 import type { RewardItem } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
+import { createRewardPointsSchema, getFirstError } from '../../shared/validation'
+
+const redeemedCatalogStorageKey = (userId: number) => `payvault:redeemed-catalog:${userId}`
+
+const readRedeemedCatalogIds = (userId?: number) => {
+  if (!userId || typeof window === 'undefined') return [] as number[]
+  try {
+    const raw = localStorage.getItem(redeemedCatalogStorageKey(userId))
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed.filter((value): value is number => typeof value === 'number') : []
+  } catch {
+    return []
+  }
+}
+
+const persistRedeemedCatalogIds = (userId: number, ids: number[]) => {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(redeemedCatalogStorageKey(userId), JSON.stringify(ids))
+}
 
 // ── Redeem success animation overlay ────────────────────────────────────────
 const RedeemSuccessModal: React.FC<{ coupon?: string; itemName: string; onClose: () => void }> = ({ coupon, itemName, onClose }) => (
@@ -127,12 +146,17 @@ export default function RewardsPage() {
   const [successData, setSuccessData] = useState<{ coupon?: string; itemName: string } | null>(null)
   const [redeemPts, setRedeemPts] = useState('')
   const [ptsLoading, setPtsLoading] = useState(false)
+  const [redeemedCatalogIds, setRedeemedCatalogIds] = useState<number[]>([])
 
   useEffect(() => {
     if (user?.id) {
       dispatch(fetchRewardSummary()); dispatch(fetchCatalog()); dispatch(fetchRewardTransactions())
     }
   }, [dispatch, user?.id])
+
+  useEffect(() => {
+    setRedeemedCatalogIds(readRedeemedCatalogIds(user?.id))
+  }, [user?.id])
 
   const handleRedeemItem = async () => {
     if (!confirmItem) return
@@ -148,7 +172,12 @@ export default function RewardsPage() {
 
       const redemption = res.payload?.data
       setSuccessData({ coupon: redemption?.couponCode, itemName: confirmItem.name })
-      dispatch(fetchRewardSummary()); dispatch(fetchRewardTransactions()); dispatch(fetchBalance())
+      if (user?.id) {
+        const nextRedeemedIds = Array.from(new Set([...redeemedCatalogIds, confirmItem.id]))
+        setRedeemedCatalogIds(nextRedeemedIds)
+        persistRedeemedCatalogIds(user.id, nextRedeemedIds)
+      }
+      dispatch(fetchRewardSummary()); dispatch(fetchCatalog()); dispatch(fetchRewardTransactions()); dispatch(fetchBalance())
       notify('success', 'Reward Redeemed!', `${confirmItem.name} successfully redeemed`)
     } else {
       toast.error(res.payload as string || 'Redemption failed')
@@ -156,9 +185,9 @@ export default function RewardsPage() {
   }
 
   const handleRedeemPoints = async () => {
-    const pts = parseInt(redeemPts)
-    if (!pts || pts < 1) { toast.error('Enter valid points'); return }
-    if (pts > (summary?.points ?? 0)) { toast.error('Insufficient points'); return }
+    const pointsResult = createRewardPointsSchema(summary?.points ?? 0).safeParse({ points: redeemPts })
+    if (!pointsResult.success) { toast.error(getFirstError(pointsResult.error)); return }
+    const pts = pointsResult.data.points
     setPtsLoading(true)
     const res = await dispatch(redeemPointsThunk(pts))
     setPtsLoading(false)
@@ -181,6 +210,7 @@ export default function RewardsPage() {
   const isSilver = (summary?.tier ?? 'SILVER') === 'SILVER'
   const effectiveTierText = isDark && isSilver ? '#dbe7ff' : tierStyle.text
   const effectiveTierBorder = isDark && isSilver ? '#3f567a' : tierStyle.border
+  const visibleCatalog = catalog.filter(item => !redeemedCatalogIds.includes(item.id))
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-5xl mx-auto">
@@ -301,10 +331,10 @@ export default function RewardsPage() {
         <div role="tabpanel" aria-label="Rewards catalog">
           {loading
             ? <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-52 w-full" />)}</div>
-            : catalog.length === 0
+            : visibleCatalog.length === 0
               ? <div className="card p-12 text-center"><div className="inline-flex mb-3"><Icon8 name="rewards" size={40} /></div><p style={{ color: 'var(--text-muted)' }}>No rewards available</p></div>
               : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {catalog.map(item => (
+                  {visibleCatalog.map(item => (
                     <RewardCard key={item.id} item={item} userPoints={pts} onRedeem={setConfirmItem} />
                   ))}
                 </div>

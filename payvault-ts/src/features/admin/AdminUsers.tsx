@@ -3,11 +3,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAppSelector, useDebounce } from '../../shared/hooks'
-import { adminService } from '../../core/api'
+import { adminService, kycService } from '../../services'
 import { formatDate } from '../../shared/utils'
 import { StatusBadge, Skeleton } from '../../shared/components/ui'
 import type { AdminUserResponse } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
+import { getFirstError, roleSelectionSchema } from '../../shared/validation'
 
 export function AdminUsers() {
   const { user } = useAppSelector(s => s.auth)
@@ -19,30 +20,64 @@ export function AdminUsers() {
   const [selected, setSelected] = useState<AdminUserResponse | null>(null)
   const [roleTo, setRoleTo] = useState(''); const [actioning, setActioning] = useState(false)
 
+  const enrichUsersWithKycStatus = useCallback(async (items: AdminUserResponse[]) => {
+    const enrichedUsers = await Promise.all(items.map(async item => {
+      try {
+        const { data } = await kycService.status(item.id)
+        return {
+          ...item,
+          kycStatus: data.data?.status ?? item.kycStatus,
+        }
+      } catch {
+        return item
+      }
+    }))
+
+    return enrichedUsers
+  }, [])
+
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
       const { data } = await adminService.listUsers(role, { page, size: 15 })
-      setUsers(data.data?.content || []); setTotal(data.data?.totalElements || 0); setTotalPages(data.data?.totalPages || 1)
+      const baseUsers = data.data?.content || []
+      const enrichedUsers = await enrichUsersWithKycStatus(baseUsers)
+      setUsers(enrichedUsers); setTotal(data.data?.totalElements || 0); setTotalPages(data.data?.totalPages || 1)
     } catch { toast.error('Failed') } finally { setLoading(false) }
-  }, [role, page])
+  }, [role, page, enrichUsersWithKycStatus])
 
   useEffect(() => { if (!dSearch) fetchUsers() }, [dSearch, fetchUsers])
 
   useEffect(() => {
     if (!dSearch) return
-    adminService.searchUsers(dSearch, role).then(r => { setUsers(r.data?.data?.content || []); setTotal(r.data?.data?.totalElements || 0) }).catch(() => {})
-  }, [dSearch, role])
+    adminService.searchUsers(dSearch, role)
+      .then(async r => {
+        const baseUsers = r.data?.data?.content || []
+        const enrichedUsers = await enrichUsersWithKycStatus(baseUsers)
+        setUsers(enrichedUsers)
+        setTotal(r.data?.data?.totalElements || 0)
+      })
+      .catch(() => {})
+  }, [dSearch, role, enrichUsersWithKycStatus])
+
+  const getVisibleKycStatus = (kycStatus?: AdminUserResponse['kycStatus'] | null) => kycStatus || 'NOT_SUBMITTED'
 
   const handleBlock = async (u: AdminUserResponse, block: boolean) => {
+    if (user?.id === u.id) {
+      toast.error('You cannot block your own admin account.')
+      return
+    }
     setActioning(true)
     try { if (block) await adminService.blockUser(u.id, role); else await adminService.unblockUser(u.id, role); toast.success(block ? 'Blocked' : 'Unblocked'); setSelected(null); fetchUsers() }
     catch { toast.error('Failed') } finally { setActioning(false) }
   }
 
   const handleRole = async () => {
-    if (!selected || !roleTo) return; setActioning(true)
-    try { await adminService.changeRole(selected.id, roleTo, role); toast.success('Role updated'); setSelected(null); fetchUsers() }
+    if (!selected) return
+    const roleResult = roleSelectionSchema.safeParse(roleTo)
+    if (!roleResult.success) { toast.error(getFirstError(roleResult.error)); return }
+    setActioning(true)
+    try { await adminService.changeRole(selected.id, roleResult.data, role); toast.success('Role updated'); setSelected(null); fetchUsers() }
     catch { toast.error('Failed') } finally { setActioning(false) }
   }
 
@@ -65,7 +100,7 @@ export function AdminUsers() {
                     <div><div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{selected.name}</div><div className="text-sm" style={{ color: 'var(--text-muted)' }}>{selected.email}</div></div>
                   </div>
                   <dl className="grid grid-cols-2 gap-3 text-sm">
-                    {[['Role', selected.role], ['Status', selected.status], ['KYC', selected.kycStatus], ['Joined', formatDate(selected.createdAt, 'DD MMM YYYY')]].map(([k, v]) => (
+                    {[['Role', selected.role], ['Status', selected.status], ['KYC', getVisibleKycStatus(selected.kycStatus)], ['Joined', formatDate(selected.createdAt, 'DD MMM YYYY')]].map(([k, v]) => (
                       <div key={k}><dt className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{k}</dt><dd className="font-medium mt-0.5" style={{ color: 'var(--text-primary)' }}>{v}</dd></div>
                     ))}
                   </dl>
@@ -78,7 +113,7 @@ export function AdminUsers() {
                   </div>
                   <div className="flex gap-3">
                     {selected.status === 'ACTIVE'
-                      ? <button onClick={() => handleBlock(selected, true)} disabled={actioning} className="flex-1 btn-danger py-2.5 text-sm inline-flex items-center justify-center gap-1"><Icon8 name="blocked" size={14} /> Block</button>
+                      ? <button onClick={() => handleBlock(selected, true)} disabled={actioning || selected.id === user?.id} className="flex-1 btn-danger py-2.5 text-sm inline-flex items-center justify-center gap-1" style={{ opacity: actioning || selected.id === user?.id ? 0.6 : 1 }}><Icon8 name="blocked" size={14} /> {selected.id === user?.id ? 'Cannot Block Self' : 'Block'}</button>
                       : <button onClick={() => handleBlock(selected, false)} disabled={actioning} className="flex-1 py-2.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-1" style={{ background: '#dcfce7', color: '#16a34a' }}><Icon8 name="success" size={14} /> Unblock</button>
                     }
                     <button onClick={() => setSelected(null)} className="flex-1 btn-secondary py-2.5 text-sm">Close</button>
@@ -92,9 +127,9 @@ export function AdminUsers() {
 
       <div><h1 className="text-xl font-display font-bold" style={{ color: 'var(--text-primary)' }}>User Management</h1></div>
       <div className="relative">
-        <span className="absolute left-5 top-1/2 -translate-y-1/2 inline-flex pointer-events-none" style={{ color: 'var(--text-muted)' }} aria-hidden="true"><Icon8 name="search" size={16} /></span>
+        <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none" style={{ color: 'var(--text-muted)' }} aria-hidden="true"><Icon8 name="search" size={15} /></span>
         <input type="search" placeholder="Search by name, email, or phone…" value={search} onChange={e => setSearch(e.target.value)}
-          className="input-field pl-14 py-2.5 text-sm" aria-label="Search users" />
+          className="input-field pl-12 py-2.5 text-sm" aria-label="Search users" />
       </div>
 
       <motion.div className="card overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -120,7 +155,7 @@ export function AdminUsers() {
                         </td>
                         <td className="px-5 py-3"><StatusBadge status={u.role} /></td>
                         <td className="px-5 py-3"><StatusBadge status={u.status} /></td>
-                        <td className="px-5 py-3"><StatusBadge status={u.kycStatus} /></td>
+                        <td className="px-5 py-3"><StatusBadge status={getVisibleKycStatus(u.kycStatus)} /></td>
                         <td className="px-5 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>{formatDate(u.createdAt, 'DD MMM YY')}</td>
                         <td className="px-5 py-3"><button onClick={() => setSelected(u)} className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: 'var(--bg-primary)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }} aria-label={`Manage ${u.name}`}>Manage</button></td>
                       </motion.tr>

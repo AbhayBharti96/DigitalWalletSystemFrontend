@@ -51,9 +51,9 @@ export default function AuthLayout() {
           {features.map((f, i) => (
             <motion.div key={f.label}
               className="rounded-xl p-3.5"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.16)' }}
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 + i * 0.07 }}>
-              <div className="mb-1 inline-flex" aria-hidden="true"><Icon8 name={f.icon} size={24} /></div>
+              <div className="mb-1 inline-flex" aria-hidden="true" style={{ color: '#ffffff' }}><Icon8 name={f.icon} size={24} /></div>
               <div className="text-sm font-semibold text-white">{f.label}</div>
               <div className="text-xs mt-0.5" style={{ color: '#86efac' }}>{f.desc}</div>
             </motion.div>

@@ -26,6 +26,12 @@ export interface LoginRequest { email: string; password: string }
 export interface SignupRequest { fullName: string; email: string; phone: string; password: string }
 export interface VerifyOtpRequest { email: string; otp: string }
 
+export interface RecipientSearchItem {
+  id: number
+  fullName: string
+  phone?: string
+}
+
 // ─── Wallet ───────────────────────────────────────────────────────────────────
 export type TxStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REVERSED'
 export type TxType = 'TOPUP' | 'TRANSFER' | 'WITHDRAW' | 'CASHBACK' | 'REDEEM'
@@ -111,6 +117,19 @@ export interface RewardItem {
   tierRequired?: RewardTier
   stock: number
   active: boolean
+  expiryDays?: number
+}
+
+export interface AdminCatalogItemPayload {
+  name: string
+  description?: string
+  pointsRequired: number
+  type: RewardItemType
+  cashbackAmount?: number
+  tierRequired?: RewardTier
+  stock: number
+  active: boolean
+  expiryDays?: number
 }
 
 export interface RewardTransaction {
@@ -229,6 +248,20 @@ export interface RazorpayOptions {
   notes?: Record<string, string>
   theme?: { color?: string; hide_topbar?: boolean }
   modal?: { ondismiss?: () => void }
+  config?: {
+    display?: {
+      blocks?: Record<string, {
+        name: string
+        instruments: Array<{
+          method: 'card' | 'upi' | 'wallet' | 'netbanking'
+        }>
+      }>
+      sequence?: string[]
+      preferences?: {
+        show_default_blocks?: boolean
+      }
+    }
+  }
 }
 
 export interface RazorpayPaymentResponse {
@@ -237,8 +270,22 @@ export interface RazorpayPaymentResponse {
   razorpay_signature: string
 }
 
+export interface RazorpayPaymentFailure {
+  error?: {
+    code?: string
+    description?: string
+    reason?: string
+    source?: string
+    step?: string
+    metadata?: {
+      order_id?: string
+      payment_id?: string
+    }
+  }
+}
+
 export interface RazorpayInstance {
   open(): void
   close(): void
-  on(event: string, handler: () => void): void
+  on(event: string, handler: (response?: RazorpayPaymentFailure) => void): void
 }

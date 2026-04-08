@@ -26,6 +26,7 @@ const adminNav: NavItem[] = [
   { to: '/admin', icon: 'overview', label: 'Overview', exact: true, darkAccent: '#6366f1' },
   { to: '/admin/users', icon: 'users', label: 'Users', darkAccent: '#8b5cf6' },
   { to: '/admin/kyc', icon: 'review', label: 'KYC Review', darkAccent: '#3b82f6' },
+  { to: '/admin/catalog', icon: 'rewards', label: 'Catalog', darkAccent: '#f59e0b' },
 ]
 
 const NavItem: React.FC<{ item: NavItem; isDark: boolean; accent?: string; onClick?: () => void }> = ({ item, isDark, accent = '#22c55e', onClick }) => (

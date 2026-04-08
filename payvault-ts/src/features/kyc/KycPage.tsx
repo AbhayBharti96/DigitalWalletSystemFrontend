@@ -2,15 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector, useNotify, useTheme } from '../../shared/hooks'
-import { kycService } from '../../core/api'
+import { kycService } from '../../services'
 import { updateKycStatus } from '../../store/authSlice'
 import { formatDate, getKycInfo } from '../../shared/utils'
 import type { DocType, KycStatusResponse } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
+import { getFirstError, kycDocumentNumberSchema, kycFileSchema } from '../../shared/validation'
 
 const DOC_TYPES: DocType[] = ['AADHAAR', 'PAN', 'PASSPORT', 'DRIVING_LICENSE']
 const MAX_FILE_SIZE_MB = 5
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 export function KycPage() {
   const dispatch = useAppDispatch()
@@ -46,9 +46,9 @@ export function KycPage() {
   }
 
   const handleFile = (f: File) => {
-    if (f.size > MAX_FILE_SIZE_BYTES) {
-      const sizeMb = (f.size / (1024 * 1024)).toFixed(2)
-      const msg = `File is ${sizeMb}MB. Maximum allowed is ${MAX_FILE_SIZE_MB}MB.`
+    const result = kycFileSchema.safeParse(f)
+    if (!result.success) {
+      const msg = getFirstError(result.error)
       setFileError(msg)
       setFile(null)
       toast.error(msg)
@@ -60,18 +60,20 @@ export function KycPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!docNumber.trim()) {
-      toast.error('Enter your document number')
+    const docNumberResult = kycDocumentNumberSchema.safeParse(docNumber)
+    if (!docNumberResult.success) {
+      toast.error(getFirstError(docNumberResult.error))
       return
     }
-    if (!file) {
-      toast.error(fileError || 'Upload your document')
+    const fileResult = kycFileSchema.safeParse(file)
+    if (!fileResult.success) {
+      toast.error(fileError || getFirstError(fileResult.error))
       return
     }
     if (!user?.id) return
     setSubmitting(true)
     try {
-      const { data } = await kycService.submit(user.id, docType, docNumber, file)
+      const { data } = await kycService.submit(user.id, docType, docNumberResult.data, fileResult.data)
       setKycData(data.data)
       dispatch(updateKycStatus('PENDING'))
       notify('info', 'KYC Submitted', 'Your documents are under review.')

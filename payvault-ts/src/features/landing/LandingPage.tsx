@@ -302,9 +302,9 @@ export default function LandingPage() {
                 transition={{ duration: 0.45, delay: idx * 0.08 }}
                 whileHover={{ y: -8 }}
                 className="group rounded-[28px] border p-6 backdrop-blur-xl transition"
-                style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }}
+                style={{ borderColor: 'var(--border-strong)', background: 'var(--bg-card)' }}
               >
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ring-white/10" style={{ background: 'linear-gradient(145deg, rgba(34,197,94,0.2), rgba(129,140,248,0.2))', color: 'var(--brand)' }}>
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl ring-1 ring-white/10" style={{ background: 'linear-gradient(145deg, rgba(34,197,94,0.28), rgba(129,140,248,0.28))', color: '#ffffff', border: '1px solid rgba(255,255,255,0.18)' }}>
                   <Icon8 name={feature.icon} size={30} className="transition group-hover:scale-110" />
                 </div>
                 <h3 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>{feature.title}</h3>
@@ -333,8 +333,8 @@ export default function LandingPage() {
             ].map(([Icon, title, text], i) => {
               const iconName = Icon as Icon8Name
               return (
-                <div key={i} className="rounded-[28px] border p-6" style={{ borderColor: 'var(--border)', background: 'var(--bg-secondary)' }}>
-                  <div style={{ color: 'var(--brand)' }}>
+                <div key={i} className="rounded-[28px] border p-6" style={{ borderColor: 'var(--border-strong)', background: 'var(--bg-secondary)' }}>
+                  <div className="inline-flex rounded-2xl p-3" style={{ color: '#ffffff', background: 'linear-gradient(145deg, rgba(34,197,94,0.9), rgba(129,140,248,0.82))', border: '1px solid rgba(255,255,255,0.16)' }}>
                     <Icon8 name={iconName} size={30} />
                   </div>
                   <h3 className="mt-4 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{title as string}</h3>

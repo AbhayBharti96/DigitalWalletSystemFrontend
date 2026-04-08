@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '../../shared/hooks'
 import { signupUser, sendOtpThunk, verifyOtpThunk } from '../../store/authSlice'
 import { addNotification } from '../../store/notificationSlice'
 import { Icon8 } from '../../shared/components/Icon8'
+import { getFieldErrors, getFirstError, otpSchema, signupSchema } from '../../shared/validation'
 
 type Step = 0 | 1
 interface FormState { fullName: string; email: string; phone: string; password: string; confirm: string }
@@ -18,19 +19,6 @@ const getPasswordStrength = (password: string) => {
   if (/\d/.test(password)) score += 1
   if (/[@$!%*?&]/.test(password)) score += 1
   return score
-}
-
-const validate = (f: FormState): Errors => {
-  const e: Errors = {}
-  if (f.fullName.trim().length < 2) e.fullName = 'At least 2 characters required'
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Invalid email address'
-  if (!/^[0-9]{10}$/.test(f.phone)) e.phone = 'Phone number must be exactly 10 digits'
-  if (f.password.length < 8) e.password = 'Minimum 8 characters'
-  else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(f.password)) {
-    e.password = 'Must include A-Z, a-z, 0-9, and @$!%*?&'
-  }
-  if (f.password !== f.confirm) e.confirm = 'Passwords do not match'
-  return e
 }
 
 const STEPS = ['Account', 'Verify Email']
@@ -49,28 +37,39 @@ export default function SignupPage() {
   const strengthColor = ['#ef4444', '#f97316', '#f59e0b', '#22c55e', '#16a34a'][strength]
 
   const setField = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextValue = k === 'phone' ? e.target.value.replace(/\D/g, '').slice(0, 10) : e.target.value
+    const nextValue = k === 'phone'
+      ? e.target.value.replace(/\D/g, '').slice(0, 10)
+      : k === 'fullName'
+        ? e.target.value.replace(/[^A-Za-z\s'-]/g, '')
+        : e.target.value
     setForm(p => ({ ...p, [k]: nextValue }))
     setErrors(p => ({ ...p, [k]: '' }))
   }
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault()
-    const errs = validate(form)
-    if (Object.keys(errs).length) {
-      setErrors(errs)
+    const validation = signupSchema.safeParse(form)
+    if (!validation.success) {
+      const fieldErrors = getFieldErrors(validation.error)
+      setErrors({
+        fullName: fieldErrors.fullName?.[0] || '',
+        email: fieldErrors.email?.[0] || '',
+        phone: fieldErrors.phone?.[0] || '',
+        password: fieldErrors.password?.[0] || '',
+        confirm: fieldErrors.confirm?.[0] || '',
+      })
       return
     }
 
     const res = await dispatch(signupUser({
-      fullName: form.fullName.trim(),
-      email: form.email.trim(),
-      phone: form.phone,
-      password: form.password,
+      fullName: validation.data.fullName,
+      email: validation.data.email,
+      phone: validation.data.phone,
+      password: validation.data.password,
     }))
 
     if (signupUser.fulfilled.match(res)) {
-      const otpRes = await dispatch(sendOtpThunk(form.email.trim()))
+      const otpRes = await dispatch(sendOtpThunk(validation.data.email))
       if (sendOtpThunk.rejected.match(otpRes)) {
         toast.error((otpRes.payload as string) || 'Account created, but OTP could not be sent. Please retry.')
         return
@@ -84,11 +83,12 @@ export default function SignupPage() {
 
   const handleVerify = async (e: FormEvent) => {
     e.preventDefault()
-    if (otp.length < 4) {
-      toast.error('Enter the OTP sent to your email')
+    const otpResult = otpSchema.safeParse(otp)
+    if (!otpResult.success) {
+      toast.error(getFirstError(otpResult.error))
       return
     }
-    const res = await dispatch(verifyOtpThunk({ email: form.email.trim(), otp }))
+    const res = await dispatch(verifyOtpThunk({ email: form.email.trim(), otp: otpResult.data }))
     if (verifyOtpThunk.fulfilled.match(res)) {
       dispatch(addNotification({
         type: 'success',
