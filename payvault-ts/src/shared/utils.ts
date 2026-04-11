@@ -129,7 +129,18 @@ export const getTransferCounterparty = (tx: Transaction, currentUserId?: number)
   return null
 }
 
-export const generateKey = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+const randomToken = () => {
+  const webCrypto = globalThis.crypto
+  if (webCrypto.randomUUID) {
+    return webCrypto.randomUUID().split('-').join('').slice(0, 8)
+  }
+
+  const bytes = new Uint8Array(6)
+  webCrypto.getRandomValues(bytes)
+  return Array.from(bytes, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 8)
+}
+
+export const generateKey = () => `${Date.now()}-${randomToken()}`
 
 /** Points earned: 1 point per ₹100 topped up */
 export const calcPoints = (amount: number) => Math.floor(amount / 100)
