@@ -22,6 +22,16 @@ export function clearClientAuth(): void {
 
 const getToken = () => sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken')
 const getRefreshToken = () => sessionStorage.getItem('refreshToken') || localStorage.getItem('refreshToken')
+const getStoredUserRole = () => {
+  const raw = sessionStorage.getItem('user') || localStorage.getItem('user')
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as { role?: string }
+    return parsed.role || null
+  } catch {
+    return null
+  }
+}
 
 const saveTokens = (access: string, refresh: string) => {
   sessionStorage.setItem('accessToken', access)
@@ -32,6 +42,10 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  const role = getStoredUserRole()
+  if (role && !config.headers['X-UserRole']) {
+    config.headers['X-UserRole'] = role
   }
   return config
 })
