@@ -26,6 +26,11 @@ const persist = (user: UserProfile, access: string, refresh: string) => {
   sessionStorage.setItem('user', JSON.stringify(user))
 }
 
+const persistTokens = (access: string, refresh: string) => {
+  sessionStorage.setItem('accessToken', access)
+  sessionStorage.setItem('refreshToken', refresh)
+}
+
 // ── Thunks ────────────────────────────────────────────────────────────────────
 export const loginUser = createAsyncThunk('auth/login', async (creds: LoginRequest, { rejectWithValue }) => {
   try {
@@ -80,10 +85,12 @@ const authSlice = createSlice({
     setTokens(state, { payload }: PayloadAction<{ accessToken: string; refreshToken: string }>) {
       state.accessToken = payload.accessToken
       state.refreshToken = payload.refreshToken
+      persistTokens(payload.accessToken, payload.refreshToken)
     },
     syncSession(state, { payload }: PayloadAction<{ accessToken: string; refreshToken: string; user?: UserProfile }>) {
       state.accessToken = payload.accessToken
       state.refreshToken = payload.refreshToken
+      persistTokens(payload.accessToken, payload.refreshToken)
       if (payload.user) {
         state.user = payload.user
         sessionStorage.setItem('user', JSON.stringify(payload.user))
