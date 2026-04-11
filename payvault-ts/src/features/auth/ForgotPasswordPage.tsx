@@ -5,7 +5,7 @@ import toast from 'react-hot-toast'
 import { authService } from '../../services'
 import { getApiErrorMessage } from '../../shared/apiErrors'
 import { Icon8 } from '../../shared/components/Icon8'
-import { emailSchema, forgotPasswordResetSchema, getFirstError, otpSchema } from '../../shared/validation'
+import { digitsOnly, emailSchema, forgotPasswordResetSchema, getFirstError, otpSchema } from '../../shared/validation'
 
 type Step = 0 | 1 | 2
 
@@ -163,7 +163,7 @@ export default function ForgotPasswordPage() {
                 autoFocus
                 placeholder="Enter OTP"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setOtp(digitsOnly(e.target.value))}
                 className="input-field text-center text-2xl font-mono tracking-[0.35em]"
               />
             </div>

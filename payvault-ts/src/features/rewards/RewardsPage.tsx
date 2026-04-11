@@ -309,7 +309,7 @@ export default function RewardsPage() {
               {ptsLoading ? '…' : '→ ₹'}
             </motion.button>
           </div>
-          {redeemPts && <div className="text-xs mt-1 font-medium" style={{ color: 'var(--brand)' }}>= {formatCurrency(parseInt(redeemPts) || 0)}</div>}
+          {redeemPts && <div className="text-xs mt-1 font-medium" style={{ color: 'var(--brand)' }}>= {formatCurrency(Number.parseInt(redeemPts, 10) || 0)}</div>}
         </motion.div>
       </div>
 
@@ -330,7 +330,7 @@ export default function RewardsPage() {
       {tab === 'catalog' && (
         <div role="tabpanel" aria-label="Rewards catalog">
           {loading
-            ? <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{[...Array(6)].map((_, i) => <Skeleton key={i} className="h-52 w-full" />)}</div>
+            ? <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-52 w-full" />)}</div>
             : visibleCatalog.length === 0
               ? <div className="card p-12 text-center"><div className="inline-flex mb-3"><Icon8 name="rewards" size={40} /></div><p style={{ color: 'var(--text-muted)' }}>No rewards available</p></div>
               : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

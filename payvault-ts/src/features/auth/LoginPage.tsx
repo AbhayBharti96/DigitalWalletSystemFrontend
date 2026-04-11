@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from '../../shared/hooks'
 import { loginUser, clearError, sendOtpThunk, verifyOtpThunk } from '../../store/authSlice'
 import { addNotification } from '../../store/notificationSlice'
 import { Icon8 } from '../../shared/components/Icon8'
-import { emailSchema, getFieldError, loginPasswordSchema, otpSchema } from '../../shared/validation'
+import { digitsOnly, emailSchema, getFieldError, loginPasswordSchema, otpSchema } from '../../shared/validation'
 
 type LoginMode = 'password' | 'otp'
 type LoginField = 'email' | 'password' | 'otp'
@@ -259,7 +259,7 @@ export default function LoginPage() {
               maxLength={8}
               placeholder="Enter OTP"
               value={form.otp}
-              onChange={e => setFieldValue('otp', e.target.value.replace(/\D/g, ''))}
+              onChange={e => setFieldValue('otp', digitsOnly(e.target.value))}
               onBlur={() => handleBlur('otp')}
               className="input-field text-center text-2xl font-mono tracking-[0.35em]"
               required

@@ -102,7 +102,7 @@ body {
 .btn-primary {
   @apply px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2;
   background: var(--brand);
-  focus-ring-color: var(--brand);
+  --tw-ring-color: var(--brand);
 }
 .btn-primary:hover:not(:disabled) { background: var(--brand-hover); box-shadow: var(--shadow-brand); }
 .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }

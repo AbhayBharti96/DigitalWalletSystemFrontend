@@ -7,10 +7,18 @@ import { getApiErrorMessage } from '../../shared/apiErrors'
 import { formatDate, getKycInfo } from '../../shared/utils'
 import type { UserProfile } from '../../types'
 import { updateCurrentUser, updateKycStatus } from '../../store/authSlice'
-import { getFirstError, profilePhotoSchema, profileSchema } from '../../shared/validation'
+import { digitsOnly, getFirstError, profilePhotoSchema, profileSchema } from '../../shared/validation'
 
 const profilePhotoKey = (userId?: number) => `payvault-profile-photo:${userId ?? 'anon'}`
 type ProfileApiPayload = Partial<UserProfile> & { name?: string }
+const nameInputValue = (value: string) =>
+  Array.from(value).filter(char =>
+    (char >= 'A' && char <= 'Z') ||
+    (char >= 'a' && char <= 'z') ||
+    char === ' ' ||
+    char === '\'' ||
+    char === '-'
+  ).join('')
 
 const normalizeProfile = (payload: ProfileApiPayload, fallback?: UserProfile | null): UserProfile => ({
   id: payload.id ?? fallback?.id ?? 0,
@@ -195,7 +203,7 @@ export function ProfilePage() {
                 id="pname"
                 type="text"
                 value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value.replace(/[^A-Za-z\s'-]/g, '') }))}
+                onChange={e => setForm(f => ({ ...f, name: nameInputValue(e.target.value) }))}
                 className="input-field"
                 minLength={2}
                 maxLength={100}
@@ -203,7 +211,7 @@ export function ProfilePage() {
             </div>
             <div>
               <label htmlFor="pphone" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Phone Number</label>
-              <input id="pphone" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} className="input-field" maxLength={10} placeholder="10 digit number" />
+              <input id="pphone" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: digitsOnly(e.target.value).slice(0, 10) }))} className="input-field" maxLength={10} placeholder="10 digit number" />
             </div>
             <button type="submit" disabled={saving} className="btn-primary py-2.5 text-sm">{saving ? 'Saving...' : 'Save Changes'}</button>
           </form>

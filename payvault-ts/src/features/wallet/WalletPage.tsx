@@ -553,7 +553,7 @@ export default function WalletPage() {
         {txLoading
           ? (
             <div className="space-y-3">
-              {[...Array(4)].map((_, i) => (
+              {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <Skeleton className="w-10 h-10 rounded-xl" />
                   <div className="flex-1 space-y-2">
@@ -691,7 +691,7 @@ export default function WalletPage() {
             </div>
           </div>
           <button onClick={() => handleTopup()} disabled={actionLoading || !topupAmount} className="w-full btn-primary py-3 text-sm">
-            {actionLoading ? 'Processing…' : `Pay ${topupAmount ? formatCurrency(parseFloat(topupAmount)) : '—'} via Razorpay`}
+            {actionLoading ? 'Processing…' : `Pay ${topupAmount ? formatCurrency(Number.parseFloat(topupAmount)) : '—'} via Razorpay`}
           </button>
         </div>
       </Modal>
@@ -761,7 +761,7 @@ export default function WalletPage() {
 
               {!selectedRecipient && (isRecipientSearchDebouncing || recipientLoading) && (
                 <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl" />)}
+                  {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl" />)}
                 </div>
               )}
 
@@ -843,7 +843,7 @@ export default function WalletPage() {
           <div className="p-3 rounded-xl text-xs" style={{ background: 'var(--bg-primary)', color: 'var(--text-muted)' }}>
             <span className="inline-flex items-center gap-1">
               <Icon8 name="star" size={14} />
-              Earn <strong style={{ color: 'var(--brand)' }}>{calcPoints(parseFloat(transfer.amount) || 0)} reward points</strong> on this transfer via scratch card.
+              Earn <strong style={{ color: 'var(--brand)' }}>{calcPoints(Number.parseFloat(transfer.amount) || 0)} reward points</strong> on this transfer via scratch card.
             </span>
           </div>
 
@@ -906,7 +906,7 @@ export default function WalletPage() {
             className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
             style={{ background: '#f59e0b' }}
           >
-            Withdraw {withdrawAmount ? formatCurrency(parseFloat(withdrawAmount)) : '—'}
+            Withdraw {withdrawAmount ? formatCurrency(Number.parseFloat(withdrawAmount)) : '—'}
           </button>
         </div>
       </Modal>
@@ -917,7 +917,7 @@ export default function WalletPage() {
         onConfirm={modal === 'transfer' ? handleTransferConfirm : handleWithdrawConfirm}
         title={modal === 'transfer' ? 'Confirm Transfer' : 'Confirm Withdrawal'}
         message={modal === 'transfer' ? `Send to ${recipientDisplay}` : 'Funds will be transferred to your bank'}
-        amount={modal === 'transfer' ? parseFloat(transfer.amount) : parseFloat(withdrawAmount)}
+        amount={modal === 'transfer' ? Number.parseFloat(transfer.amount) : Number.parseFloat(withdrawAmount)}
         loading={actionLoading}
       />
     </div>

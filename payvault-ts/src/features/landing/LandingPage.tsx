@@ -151,6 +151,7 @@ export default function LandingPage() {
                 <span className="bg-gradient-to-r from-green-300 via-green-400 to-indigo-300 bg-clip-text text-transparent">
                   {' '}reward journeys,
                 </span>
+                {' '}
                 and smooth KYC in one sleek experience.
               </motion.h1>
 
@@ -263,7 +264,7 @@ export default function LandingPage() {
                       ))}
                     </div>
                     <div className="mt-4 flex justify-between text-xs text-slate-400">
-                      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <span key={day}>{day}</span>)}
                     </div>
                   </div>
                 </div>

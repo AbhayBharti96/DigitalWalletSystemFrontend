@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from '../../shared/hooks'
 import { signupUser, sendOtpThunk, verifyOtpThunk } from '../../store/authSlice'
 import { addNotification } from '../../store/notificationSlice'
 import { Icon8 } from '../../shared/components/Icon8'
-import { getFieldErrors, getFirstError, otpSchema, signupSchema } from '../../shared/validation'
+import { digitsOnly, getFieldErrors, getFirstError, otpSchema, signupSchema } from '../../shared/validation'
 
 type Step = 0 | 1
 interface FormState { fullName: string; email: string; phone: string; password: string; confirm: string }
@@ -22,6 +22,14 @@ const getPasswordStrength = (password: string) => {
 }
 
 const STEPS = ['Account', 'Verify Email']
+const nameInputValue = (value: string) =>
+  Array.from(value).filter(char =>
+    (char >= 'A' && char <= 'Z') ||
+    (char >= 'a' && char <= 'z') ||
+    char === ' ' ||
+    char === '\'' ||
+    char === '-'
+  ).join('')
 
 export default function SignupPage() {
   const dispatch = useAppDispatch()
@@ -38,9 +46,9 @@ export default function SignupPage() {
 
   const setField = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextValue = k === 'phone'
-      ? e.target.value.replace(/\D/g, '').slice(0, 10)
+      ? digitsOnly(e.target.value).slice(0, 10)
       : k === 'fullName'
-        ? e.target.value.replace(/[^A-Za-z\s'-]/g, '')
+        ? nameInputValue(e.target.value)
         : e.target.value
     setForm(p => ({ ...p, [k]: nextValue }))
     setErrors(p => ({ ...p, [k]: '' }))
@@ -212,7 +220,7 @@ export default function SignupPage() {
             <div>
               <label htmlFor="otp" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>OTP Code</label>
               <input id="otp" type="text" inputMode="numeric" placeholder="Enter OTP" value={otp}
-                onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                onChange={e => setOtp(digitsOnly(e.target.value))}
                 className="input-field text-center text-3xl font-mono tracking-[0.4em]" maxLength={8} autoFocus />
             </div>
             <button type="submit" disabled={loading} className="w-full btn-primary py-3 text-sm">

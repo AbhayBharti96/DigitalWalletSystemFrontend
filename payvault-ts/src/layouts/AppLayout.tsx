@@ -377,14 +377,16 @@ export default function AppLayout() {
                         onClick={() => { navigate(item.to); setMenuOpen(false) }}
                         className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm hover:opacity-80 transition-opacity"
                         style={{ color: 'var(--text-primary)' }}>
-                        <span aria-hidden="true"><Icon8 name={item.icon} size={16} /></span>{item.label}
+                        <span aria-hidden="true"><Icon8 name={item.icon} size={16} /></span>
+                        {item.label}
                       </button>
                     ))}
                     <div className="border-t my-1" style={{ borderColor: 'var(--border)' }} />
                     <button role="menuitem" onClick={requestLogout}
                       className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm hover:opacity-80 transition-opacity"
                       style={{ color: 'var(--danger)' }}>
-                      <span aria-hidden="true"><Icon8 name="logout" size={16} /></span>Sign Out
+                      <span aria-hidden="true"><Icon8 name="logout" size={16} /></span>
+                      Sign Out
                     </button>
                   </motion.div>
                 )}

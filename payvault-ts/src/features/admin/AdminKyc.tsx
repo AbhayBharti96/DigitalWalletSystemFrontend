@@ -15,7 +15,7 @@ const resolveDocPreviewUrl = (docFilePath?: string): string | null => {
   if (!docFilePath) return null
   if (/^https?:\/\//i.test(docFilePath)) return docFilePath
 
-  const normalized = docFilePath.replace(/\\/g, '/')
+  const normalized = docFilePath.split('\\').join('/')
   const uploadsIndex = normalized.toLowerCase().indexOf('/uploads/')
   const maybePublicPath = uploadsIndex >= 0 ? normalized.slice(uploadsIndex) : normalized
 
@@ -246,7 +246,7 @@ export function AdminKyc() {
       <motion.div className="card overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         {loading ? (
           <div className="p-5 space-y-4">
-            {[...Array(5)].map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex gap-4">
                 <Skeleton className="w-10 h-10 rounded-xl" />
                 <div className="flex-1 space-y-2">

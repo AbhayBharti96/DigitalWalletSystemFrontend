@@ -231,35 +231,36 @@ export default function AdminCatalog() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Reward Name</label>
-            <input value={form.name} onChange={e => setField('name', e.target.value)} className="input-field" placeholder="Weekend cashback" />
+            <label htmlFor="catalog-name" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Reward Name</label>
+            <input id="catalog-name" value={form.name} onChange={e => setField('name', e.target.value)} className="input-field" placeholder="Weekend cashback" />
             {errors.name && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.name}</p>}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Description</label>
-            <textarea value={form.description} onChange={e => setField('description', e.target.value)} className="input-field min-h-24" placeholder="Describe what the user gets" />
+            <label htmlFor="catalog-description" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Description</label>
+            <textarea id="catalog-description" value={form.description} onChange={e => setField('description', e.target.value)} className="input-field min-h-24" placeholder="Describe what the user gets" />
             {errors.description && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.description}</p>}
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Reward Type</label>
-              <select value={form.type} onChange={e => setField('type', e.target.value as RewardItemType)} className="input-field">
+              <label htmlFor="catalog-type" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Reward Type</label>
+              <select id="catalog-type" value={form.type} onChange={e => setField('type', e.target.value as RewardItemType)} className="input-field">
                 {(['CASHBACK', 'COUPON', 'VOUCHER'] as const).map(type => <option key={type} value={type}>{rewardTypeLabel[type]}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Points Required</label>
-              <input type="number" min={1} value={form.pointsRequired} onChange={e => setField('pointsRequired', e.target.value)} className="input-field" placeholder="250" />
+              <label htmlFor="catalog-points" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Points Required</label>
+              <input id="catalog-points" type="number" min={1} value={form.pointsRequired} onChange={e => setField('pointsRequired', e.target.value)} className="input-field" placeholder="250" />
               {errors.pointsRequired && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.pointsRequired}</p>}
             </div>
           </div>
 
           <div className="grid sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Cashback Amount</label>
+              <label htmlFor="catalog-cashback" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Cashback Amount</label>
               <input
+                id="catalog-cashback"
                 type="number"
                 min={1}
                 required={form.type === 'CASHBACK'}
@@ -272,21 +273,21 @@ export default function AdminCatalog() {
               {errors.cashbackAmount && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.cashbackAmount}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Stock</label>
-              <input type="number" min={1} value={form.stock} onChange={e => setField('stock', e.target.value)} className="input-field" placeholder="50" />
+              <label htmlFor="catalog-stock" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Stock</label>
+              <input id="catalog-stock" type="number" min={1} value={form.stock} onChange={e => setField('stock', e.target.value)} className="input-field" placeholder="50" />
               {errors.stock && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.stock}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Expiry Days</label>
-              <input type="number" min={1} value={form.expiryDays} onChange={e => setField('expiryDays', e.target.value)} className="input-field" placeholder="30" />
+              <label htmlFor="catalog-expiry" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Expiry Days</label>
+              <input id="catalog-expiry" type="number" min={1} value={form.expiryDays} onChange={e => setField('expiryDays', e.target.value)} className="input-field" placeholder="30" />
               {errors.expiryDays && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{errors.expiryDays}</p>}
             </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Tier Required</label>
-              <select value={form.tierRequired} onChange={e => setField('tierRequired', e.target.value as '' | RewardTier)} className="input-field">
+              <label htmlFor="catalog-tier" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Tier Required</label>
+              <select id="catalog-tier" value={form.tierRequired} onChange={e => setField('tierRequired', e.target.value as '' | RewardTier)} className="input-field">
                 <option value="">All tiers</option>
                 <option value="SILVER">Silver</option>
                 <option value="GOLD">Gold</option>
@@ -324,7 +325,7 @@ export default function AdminCatalog() {
 
           {loading ? (
             <div className="space-y-3">
-              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
             </div>
           ) : items.length === 0 ? (
             <EmptyState icon={<Icon8 name="rewards" size={34} />} title="No catalog items yet" description="Add the first reward item from the form." />

@@ -240,7 +240,7 @@ export const StatusBadge: React.FC<{ status?: string | null }> = ({ status }) =>
   return (
     <span className="text-xs px-2 py-0.5 rounded-full font-semibold whitespace-nowrap"
       style={{ background: c.bg, color: c.color }}>
-      {safeStatus ? safeStatus.replace(/_/g, ' ') : '—'}
+      {safeStatus ? safeStatus.split('_').join(' ') : '—'}
     </span>
   )
 }

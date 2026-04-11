@@ -58,8 +58,8 @@ export const hasPasswordComplexity = (value: string) => {
   return hasLower && hasUpper && hasDigit && hasSymbol
 }
 
-export const normalizeWhitespace = (value: string) => value.trim().replace(/\s+/g, ' ')
-export const digitsOnly = (value: string) => value.replace(/\D/g, '')
+export const normalizeWhitespace = (value: string) => value.trim().split(/\s+/).join(' ')
+export const digitsOnly = (value: string) => Array.from(value).filter(char => char >= '0' && char <= '9').join('')
 
 const trimmedRequiredString = (message: string) =>
   z.string().transform(value => value.trim()).pipe(z.string().min(1, message))

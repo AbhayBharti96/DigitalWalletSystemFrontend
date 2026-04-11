@@ -215,7 +215,7 @@ export function KycPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Upload Document</label>
+              <label htmlFor="kyc-document-file" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Upload Document</label>
               <div
                 className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all"
                 style={{
@@ -237,11 +237,11 @@ export function KycPage() {
               >
                 <input
                   ref={fileRef}
+                  id="kyc-document-file"
                   type="file"
                   className="hidden"
                   accept="image/*,.pdf"
                   onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
-                  aria-hidden="true"
                 />
                 {file ? (
                   <>

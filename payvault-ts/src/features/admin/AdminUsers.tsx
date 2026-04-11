@@ -248,7 +248,7 @@ export function AdminUsers() {
         {loading
           ? (
             <div className="p-5 space-y-3">
-              {[...Array(6)].map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex gap-3">
                   <Skeleton className="w-9 h-9 rounded-xl" />
                   <div className="flex-1 space-y-2">
@@ -264,7 +264,7 @@ export function AdminUsers() {
             : (
               <>
                 <div className="overflow-x-auto">
-                  <table className="w-full" role="grid" aria-label="Users list">
+                  <table className="w-full" aria-label="Users list">
                     <thead>
                       <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
                         {['User', 'Role', 'KYC', 'Status', 'Joined', ''].map(h => (

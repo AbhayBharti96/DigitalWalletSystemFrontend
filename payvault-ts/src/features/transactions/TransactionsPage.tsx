@@ -81,11 +81,11 @@ export function TransactionsPage() {
       }
 
       const escapeHtml = (value?: string | number | null) => String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
+        .split('&').join('&amp;')
+        .split('<').join('&lt;')
+        .split('>').join('&gt;')
+        .split('"').join('&quot;')
+        .split('\'').join('&#39;')
 
       const tableRows = rows.length === 0
         ? '<tr><td colspan="6" class="empty">No transactions found for this date range.</td></tr>'
@@ -275,7 +275,7 @@ export function TransactionsPage() {
 
           <motion.div className="card overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {txLoading ? (
-              <div className="p-5 space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="flex gap-3"><Skeleton className="w-10 h-10 rounded-xl" /><div className="flex-1 space-y-2"><Skeleton className="h-3 w-2/3" /><Skeleton className="h-3 w-1/2" /></div><Skeleton className="h-4 w-20" /></div>)}</div>
+              <div className="p-5 space-y-3">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="flex gap-3"><Skeleton className="w-10 h-10 rounded-xl" /><div className="flex-1 space-y-2"><Skeleton className="h-3 w-2/3" /><Skeleton className="h-3 w-1/2" /></div><Skeleton className="h-4 w-20" /></div>)}</div>
             ) : filter === 'REDEEM' ? (
               redeemRows.length === 0 ? (
                 <div className="text-center py-12"><div className="inline-flex mb-3"><Icon8 name="info" size={36} /></div><p style={{ color: 'var(--text-muted)' }}>No redeem history found</p></div>
