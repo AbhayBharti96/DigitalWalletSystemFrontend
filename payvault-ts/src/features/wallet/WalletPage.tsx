@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector, useNotify, useDebounce } from '../../shared/hooks'
 import { fetchBalance, fetchTransactions, transferFunds, withdrawFunds, createPaymentOrder } from '../../store/walletSlice'
-import { fetchRewardSummary } from '../../store/rewardsSlice'
+import { fetchRewardSummary, fetchRewardTransactions } from '../../store/rewardsSlice'
 import { walletService, rewardsService, userService } from '../../services'
 import { getApiErrorMessage } from '../../shared/apiErrors'
 import { Modal, ConfirmDialog, SuccessOverlay, Skeleton, EmptyState, StatusBadge } from '../../shared/components/ui'
@@ -339,6 +339,18 @@ export default function WalletPage() {
 
             setModal(null)
             triggerSuccess('Top-up', amount)
+            dispatch(fetchRewardSummary())
+            dispatch(fetchRewardTransactions())
+            // Reward earning runs asynchronously through Kafka in backend;
+            // do a delayed refresh so UI catches eventual updates.
+            setTimeout(() => {
+              dispatch(fetchRewardSummary())
+              dispatch(fetchRewardTransactions())
+            }, 1800)
+            setTimeout(() => {
+              dispatch(fetchRewardSummary())
+              dispatch(fetchRewardTransactions())
+            }, 4500)
             notify('success', 'Top-up Successful!', `${formatCurrency(amount)} added to your wallet`)
             toast.success(`Wallet topped up with ${formatCurrency(amount)}`)
             setTopupAmount('')

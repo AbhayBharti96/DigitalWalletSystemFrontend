@@ -21,23 +21,29 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <App />
           <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '14px',
-              borderRadius: '12px',
-              padding: '12px 16px',
-              background: 'var(--bg-card)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border)',
-              boxShadow: 'var(--shadow-md)',
-            },
-            success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
-            error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
-          }}
-        />
+            position="top-right"
+            gutter={10}
+            containerStyle={{
+              top: 16,
+              right: 16,
+              zIndex: 2147483647,
+            }}
+            toastOptions={{
+              duration: 4000,
+              style: {
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '14px',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+                boxShadow: 'var(--shadow-md)',
+              },
+              success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
+              error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+            }}
+          />
         </BrowserRouter>
       </Provider>
     </ErrorBoundary>

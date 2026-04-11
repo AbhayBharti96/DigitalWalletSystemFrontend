@@ -168,6 +168,15 @@ export default function RewardsPage() {
   }, [dispatch, user?.id])
 
   useEffect(() => {
+    if (!user?.id) return
+    const timer = globalThis.setInterval(() => {
+      dispatch(fetchRewardSummary())
+      dispatch(fetchRewardTransactions())
+    }, 4000)
+    return () => globalThis.clearInterval(timer)
+  }, [dispatch, user?.id])
+
+  useEffect(() => {
     setRedeemedCatalogIds(readRedeemedCatalogIds(user?.id))
   }, [user?.id])
 
