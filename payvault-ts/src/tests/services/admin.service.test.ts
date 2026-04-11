@@ -38,7 +38,7 @@ describe('adminService', () => {
     expect(apiClientMock.post).toHaveBeenNthCalledWith(1, '/api/admin/kyc/12/approve', {}, {
       headers: { 'X-UserRole': 'ADMIN', 'X-UserEmail': 'admin@example.com' },
     })
-    expect(apiClientMock.post).toHaveBeenNthCalledWith(2, '/api/admin/kyc/12/reject?reason=Missing%20document', {}, {
+    expect(apiClientMock.post).toHaveBeenNthCalledWith(2, '/api/admin/kyc/12/reject?reason=Missing+document&resubmitUrl=https%3A%2F%2Fpayvault.app%2Fkyc', {}, {
       headers: {
         'X-UserRole': 'ADMIN',
         'X-UserEmail': 'admin@example.com',

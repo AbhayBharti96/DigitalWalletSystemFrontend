@@ -28,14 +28,17 @@ export const adminService = {
     }),
   approveKyc: (kycId: number, role: string, email: string) =>
     apiClient.post(`/api/admin/kyc/${kycId}/approve`, {}, { headers: { 'X-UserRole': role, 'X-UserEmail': email } }),
-  rejectKyc: (kycId: number, reason: string, role: string, email: string, resubmitUrl?: string) =>
-    apiClient.post(`/api/admin/kyc/${kycId}/reject?reason=${encodeURIComponent(reason)}`, {}, {
+  rejectKyc: (kycId: number, reason: string, role: string, email: string, resubmitUrl?: string) => {
+    const query = new URLSearchParams({ reason })
+    if (resubmitUrl) query.set('resubmitUrl', resubmitUrl)
+    return apiClient.post(`/api/admin/kyc/${kycId}/reject?${query.toString()}`, {}, {
       headers: {
         'X-UserRole': role,
         'X-UserEmail': email,
         ...(resubmitUrl ? { 'X-Kyc-Resubmit-Url': resubmitUrl } : {}),
       },
-    }),
+    })
+  },
   addCatalogItem: (payload: AdminCatalogItemPayload, role: string) =>
     apiClient.post<ApiResponse<RewardItem>>('/api/rewards/admin/catalog/add', payload, { headers: { 'X-UserRole': role } }),
   updateCatalogItem: async (catalogId: number, payload: AdminCatalogItemPayload, role: string) => {
