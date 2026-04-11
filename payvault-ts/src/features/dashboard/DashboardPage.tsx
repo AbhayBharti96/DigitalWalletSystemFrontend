@@ -22,6 +22,13 @@ const nextTierSubText = (enabled: boolean, nextTier: string | undefined, points:
   return `${points.toLocaleString()} / ${targetForNextTier.toLocaleString()} pts to ${nextTier}`
 }
 
+const inferNextTier = (tier?: string, pointsToNextTier?: number) => {
+  if (!pointsToNextTier || pointsToNextTier <= 0) return undefined
+  if (tier === 'SILVER') return 'GOLD'
+  if (tier === 'GOLD') return 'PLATINUM'
+  return undefined
+}
+
 const lightCardShadow = '0 12px 28px -18px rgba(15,23,42,0.32), 0 3px 8px -3px rgba(15,23,42,0.12)'
 const HIDDEN_BALANCE_TEXT = '••••••'
 
@@ -88,7 +95,7 @@ export default function DashboardPage() {
   const tierS = getTierStyle(summary?.tier)
   const TierIcon = getTierIcon(summary?.tier)
   const currentTier = (summary?.tier ?? 'SILVER').toUpperCase()
-  const nextTier = summary?.nextTier?.toUpperCase()
+  const nextTier = (summary?.nextTier?.toUpperCase() ?? inferNextTier(summary?.tier, summary?.pointsToNextTier))
   const points = summary?.points ?? 0
   const pointsToNextTier = summary?.pointsToNextTier ?? 0
   const targetForNextTier = points + pointsToNextTier

@@ -25,10 +25,10 @@ describe('walletService', () => {
     })
   })
 
-  it('calls wallet mutation endpoints with expected payloads', () => {
+  it('calls wallet mutation endpoints with expected payloads', async () => {
     walletService.transfer(9, { receiverId: 11, amount: 250, description: 'Test' })
     walletService.withdraw(9, 125)
-    walletService.createOrder(9, 500)
+    await walletService.createOrder(9, 500)
     walletService.verifyPayment(9, { razorpay_order_id: 'order_1' })
     walletService.markPaymentFailed(9, { razorpay_order_id: 'order_1' }, 'Payment cancelled')
     walletService.cancelPayment(9, { razorpay_order_id: 'order_1' })
@@ -47,5 +47,14 @@ describe('walletService', () => {
     expect(apiClientMock.post).toHaveBeenNthCalledWith(6, '/api/payment/cancel', { razorpay_order_id: 'order_1' }, {
       headers: { 'X-User-Id': 9 },
     })
+  })
+
+  it('falls back to body-based create-order request when query-based order creation is rejected', async () => {
+    apiClientMock.post.mockRejectedValueOnce({ response: { status: 400 } })
+
+    await walletService.createOrder(9, 500)
+
+    expect(apiClientMock.post).toHaveBeenNthCalledWith(1, '/api/payment/create-order?amount=500', {}, { headers: { 'X-User-Id': 9 } })
+    expect(apiClientMock.post).toHaveBeenNthCalledWith(2, '/api/payment/create-order', { amount: 500 }, { headers: { 'X-User-Id': 9 } })
   })
 })

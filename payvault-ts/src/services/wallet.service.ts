@@ -16,10 +16,20 @@ export const walletService = {
     apiClient.post<ApiResponse<void>>('/api/wallet/transfer', payload, { headers: { 'X-User-Id': userId } }),
   withdraw: (userId: number, amount: number) =>
     apiClient.post<ApiResponse<void>>('/api/wallet/withdraw', { amount }, { headers: { 'X-User-Id': userId } }),
-  createOrder: (userId: number, amount: number) =>
-    apiClient.post<RazorpayOrder>(`/api/payment/create-order?amount=${amount}`, {}, {
-      headers: { 'X-User-Id': userId },
-    }),
+  createOrder: async (userId: number, amount: number) => {
+    try {
+      return await apiClient.post<RazorpayOrder | ApiResponse<RazorpayOrder>>(`/api/payment/create-order?amount=${amount}`, {}, {
+        headers: { 'X-User-Id': userId },
+      })
+    } catch (error: any) {
+      if ([400, 404, 405].includes(error?.response?.status)) {
+        return apiClient.post<RazorpayOrder | ApiResponse<RazorpayOrder>>('/api/payment/create-order', { amount }, {
+          headers: { 'X-User-Id': userId },
+        })
+      }
+      throw error
+    }
+  },
   verifyPayment: (userId: number, payload: Record<string, string>) =>
     apiClient.post<string>('/api/payment/verify', payload, { headers: { 'X-User-Id': userId } }),
   markPaymentFailed: (userId: number, payload: Record<string, string>, reason?: string) =>

@@ -11,6 +11,16 @@ interface WalletState {
   loading: boolean; txLoading: boolean; error: string | null
 }
 
+type ApiLike<T> = { data?: T } | T
+
+const unwrap = <T>(payload: ApiLike<T> | undefined): T | undefined => {
+  if (!payload) return undefined
+  if (typeof payload === 'object' && payload !== null && 'data' in payload) {
+    return (payload as { data?: T }).data
+  }
+  return payload as T
+}
+
 const uid = (s: RootState) => s.auth.user?.id ?? 0
 
 export const fetchBalance = createAsyncThunk('wallet/balance', async (_, { getState, rejectWithValue }) => {
@@ -41,7 +51,14 @@ export const withdrawFunds = createAsyncThunk('wallet/withdraw', async (amount: 
 })
 
 export const createPaymentOrder = createAsyncThunk('payment/create-order', async (amount: number, { getState, rejectWithValue }) => {
-  try { const { data } = await walletService.createOrder(uid(getState() as RootState), amount); return data }
+  try {
+    const { data } = await walletService.createOrder(uid(getState() as RootState), amount)
+    const order = unwrap(data)
+    if (!order) {
+      return rejectWithValue('Order creation failed')
+    }
+    return order
+  }
   catch (e: unknown) { return rejectWithValue(getApiErrorMessage(e, 'Order creation failed')) }
 })
 
