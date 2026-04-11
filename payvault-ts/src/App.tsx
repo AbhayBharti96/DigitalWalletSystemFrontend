@@ -1,12 +1,14 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { useAppSelector, useAppDispatch } from './shared/hooks'
-import { seedNotifications } from './store/notificationSlice'
+import { addNotification, seedNotifications } from './store/notificationSlice'
 import { resetWalletState } from './store/walletSlice'
 import { resetRewardsState } from './store/rewardsSlice'
 import { authService, kycService, userService } from './services'
 import { syncSession, updateCurrentUser, updateKycStatus } from './store/authSlice'
 import { LoadingScreen, NotFoundPage } from './shared/components/ui'
+import { formatCurrency } from './shared/utils'
+import type { Transaction } from './types'
 import AppLayout from './layouts/AppLayout'
 import AuthLayout from './layouts/AuthLayout'
 import LandingPage from './features/landing/LandingPage'
@@ -24,6 +26,21 @@ const AdminDashboard   = lazy(() => import('./features/admin/AdminDashboard'))
 const AdminUsers       = lazy(() => import('./features/admin/AdminUsers'))
 const AdminKyc         = lazy(() => import('./features/admin/AdminKyc'))
 const AdminCatalog     = lazy(() => import('./features/admin/AdminCatalog'))
+const seenTransactionStorageKey = (userId: number) => `payvault:seen-transactions:${userId}`
+
+const transactionNotificationForUser = (tx: Transaction, currentUserId: number) => {
+  if (tx.type !== 'TRANSFER') return null
+
+  if (tx.receiverId === currentUserId) {
+    return {
+      type: 'success' as const,
+      title: 'Money Received',
+      message: `${formatCurrency(tx.amount)} credited to your wallet${tx.senderId ? ` from User #${tx.senderId}` : ''}.`,
+    }
+  }
+
+  return null
+}
 // ── Guards ─────────────────────────────────────────────────────────────────────
 const RequireAuth: React.FC<{ requireKyc?: boolean; adminOnly?: boolean; kycReady?: boolean }> = ({ requireKyc, adminOnly, kycReady = true }) => {
   const { accessToken, user } = useAppSelector(s => s.auth)
@@ -38,6 +55,7 @@ const RequireAuth: React.FC<{ requireKyc?: boolean; adminOnly?: boolean; kycRead
 export default function App() {
   const dispatch = useAppDispatch()
   const { accessToken, refreshToken, user } = useAppSelector(s => s.auth)
+  const walletTransactions = useAppSelector(s => s.wallet.transactions?.content ?? [])
   const [authReady, setAuthReady] = useState(false)
   const [kycReady, setKycReady] = useState(false)
   const authSyncedRef = useRef(false)
@@ -189,6 +207,35 @@ export default function App() {
     void syncKycStatus()
     return () => { active = false }
   }, [accessToken, user?.id, user?.kycStatus, dispatch])
+
+  useEffect(() => {
+    if (!user?.id || walletTransactions.length === 0) return
+
+    const storageKey = seenTransactionStorageKey(user.id)
+    const transactionIds = walletTransactions.map(tx => tx.id)
+    const raw = localStorage.getItem(storageKey)
+    if (!raw) {
+      localStorage.setItem(storageKey, JSON.stringify(transactionIds))
+      return
+    }
+
+    let seenIds: number[] = []
+    try {
+      seenIds = JSON.parse(raw) as number[]
+    } catch {
+      seenIds = []
+    }
+
+    const unseenTransactions = walletTransactions.filter(tx => !seenIds.includes(tx.id))
+    unseenTransactions.slice().reverse().forEach(tx => {
+      const nextNotification = transactionNotificationForUser(tx, user.id)
+      if (nextNotification) {
+        dispatch(addNotification(nextNotification))
+      }
+    })
+
+    localStorage.setItem(storageKey, JSON.stringify(Array.from(new Set([...seenIds, ...transactionIds])).slice(0, 200)))
+  }, [dispatch, user?.id, walletTransactions])
 
   if (accessToken && !authReady) {
     return <LoadingScreen />
