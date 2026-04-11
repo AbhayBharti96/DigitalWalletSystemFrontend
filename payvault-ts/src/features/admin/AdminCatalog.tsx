@@ -46,6 +46,20 @@ const getCashbackAmountError = (form: FormState) =>
     ? 'Cashback amount is required for cashback rewards'
     : ''
 
+const catalogPayloadFromForm = (form: ReturnType<typeof adminCatalogSchema.parse>): AdminCatalogItemPayload => ({
+  name: form.name,
+  description: form.description || undefined,
+  pointsRequired: form.pointsRequired,
+  type: form.type,
+  cashbackAmount: form.cashbackAmount === '' ? undefined : form.cashbackAmount,
+  tierRequired: form.tierRequired === '' ? undefined : form.tierRequired,
+  stock: form.stock,
+  expiryDays: form.expiryDays === '' ? undefined : form.expiryDays,
+  active: form.active,
+})
+
+const skeletonKeys = ['catalog-skeleton-1', 'catalog-skeleton-2', 'catalog-skeleton-3', 'catalog-skeleton-4']
+
 export default function AdminCatalog() {
   const { user } = useAppSelector(s => s.auth)
   const role = user?.role || 'ADMIN'
@@ -141,17 +155,7 @@ export default function AdminCatalog() {
       return
     }
 
-    const payload: AdminCatalogItemPayload = {
-      name: result.data.name,
-      description: result.data.description || undefined,
-      pointsRequired: result.data.pointsRequired,
-      type: result.data.type,
-      cashbackAmount: result.data.cashbackAmount === '' ? undefined : result.data.cashbackAmount,
-      tierRequired: result.data.tierRequired === '' ? undefined : result.data.tierRequired,
-      stock: result.data.stock,
-      expiryDays: result.data.expiryDays === '' ? undefined : result.data.expiryDays,
-      active: result.data.active,
-    }
+    const payload = catalogPayloadFromForm(result.data)
 
     setSubmitting(true)
     try {
@@ -166,7 +170,8 @@ export default function AdminCatalog() {
       }
       resetForm()
     } catch {
-      toast.error(editingId ? 'Could not update catalog item' : 'Could not add catalog item')
+      const failureMessage = editingId ? 'Could not update catalog item' : 'Could not add catalog item'
+      toast.error(failureMessage)
     } finally {
       setSubmitting(false)
     }
@@ -304,7 +309,10 @@ export default function AdminCatalog() {
 
           <div className="flex gap-3">
             <button type="submit" disabled={submitting} className="flex-1 btn-primary py-3 text-sm">
-              {submitting ? (editingId ? 'Saving changes...' : 'Adding item...') : (editingId ? 'Save Changes' : 'Add Catalog Item')}
+              {submitting && editingId ? 'Saving changes...' : null}
+              {submitting && !editingId ? 'Adding item...' : null}
+              {!submitting && editingId ? 'Save Changes' : null}
+              {!submitting && !editingId ? 'Add Catalog Item' : null}
             </button>
             {editingId && (
               <button type="button" onClick={resetForm} className="flex-1 btn-secondary py-3 text-sm">
@@ -325,11 +333,13 @@ export default function AdminCatalog() {
 
           {loading ? (
             <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-2xl" />)}
+              {skeletonKeys.map(key => <Skeleton key={key} className="h-28 w-full rounded-2xl" />)}
             </div>
-          ) : items.length === 0 ? (
+          ) : null}
+          {!loading && items.length === 0 ? (
             <EmptyState icon={<Icon8 name="rewards" size={34} />} title="No catalog items yet" description="Add the first reward item from the form." />
-          ) : (
+          ) : null}
+          {!loading && items.length > 0 ? (
             <div className="space-y-3">
               {items.map(item => {
                 const tierStyle = getTierStyle(item.tierRequired)
@@ -395,7 +405,7 @@ export default function AdminCatalog() {
                 )
               })}
             </div>
-          )}
+          ) : null}
         </motion.div>
       </div>
     </div>

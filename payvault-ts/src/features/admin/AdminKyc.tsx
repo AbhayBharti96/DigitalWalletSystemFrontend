@@ -41,6 +41,8 @@ const maskDocumentNumber = (value?: string) => {
   return `${'•'.repeat(Math.max(value.length - 4, 0))}${value.slice(-4)}`
 }
 
+const kycSkeletonKeys = ['kyc-skeleton-1', 'kyc-skeleton-2', 'kyc-skeleton-3', 'kyc-skeleton-4', 'kyc-skeleton-5']
+
 export function AdminKyc() {
   const { user } = useAppSelector(s => s.auth)
   const role = user?.role || 'ADMIN'
@@ -72,7 +74,7 @@ export function AdminKyc() {
   }
 
   const handle = async (approve: boolean) => {
-    if (!selected || !user) return
+    if (!selected || !user?.email) return
     const reasonResult = rejectionReasonSchema.safeParse(reason)
     if (!approve && !reasonResult.success) {
       toast.error(getFirstError(reasonResult.error))
@@ -82,9 +84,9 @@ export function AdminKyc() {
     setActioning(true)
     try {
       if (approve) {
-        await adminService.approveKyc(selected.kycId, role, user.email!)
+        await adminService.approveKyc(selected.kycId, role, user.email)
       } else {
-        await adminService.rejectKyc(selected.kycId, rejectionReason, role, user.email!)
+        await adminService.rejectKyc(selected.kycId, rejectionReason, role, user.email)
       }
       toast.success(approve ? 'KYC Approved' : 'KYC Rejected')
       setSelected(null)
@@ -246,8 +248,8 @@ export function AdminKyc() {
       <motion.div className="card overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         {loading ? (
           <div className="p-5 space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex gap-4">
+            {kycSkeletonKeys.map(key => (
+              <div key={key} className="flex gap-4">
                 <Skeleton className="w-10 h-10 rounded-xl" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-3 w-2/3" />

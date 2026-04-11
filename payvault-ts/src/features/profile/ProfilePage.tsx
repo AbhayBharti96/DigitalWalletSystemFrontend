@@ -34,7 +34,7 @@ const normalizeProfile = (payload: ProfileApiPayload, fallback?: UserProfile | n
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
     reader.onerror = () => reject(new Error('Failed to read selected image'))
     reader.readAsDataURL(file)
   })
@@ -99,7 +99,7 @@ export function ProfilePage() {
       const url = await fileToDataUrl(fileResult.data)
       setPhotoDataUrl(url)
       localStorage.setItem(profilePhotoKey(user.id), url)
-      window.dispatchEvent(new Event('payvault-profile-photo-updated'))
+      globalThis.dispatchEvent(new Event('payvault-profile-photo-updated'))
       toast.success('Profile photo updated.')
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Could not update profile photo.'))
@@ -112,7 +112,7 @@ export function ProfilePage() {
     if (!user?.id) return
     localStorage.removeItem(profilePhotoKey(user.id))
     setPhotoDataUrl(null)
-    window.dispatchEvent(new Event('payvault-profile-photo-updated'))
+    globalThis.dispatchEvent(new Event('payvault-profile-photo-updated'))
     toast.success('Profile photo removed.')
   }
 

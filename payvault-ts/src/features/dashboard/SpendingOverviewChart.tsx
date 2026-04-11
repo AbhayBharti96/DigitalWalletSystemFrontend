@@ -14,7 +14,7 @@ const CustomTip = ({ active, payload, label }: any) => {
   )
 }
 
-export default function SpendingOverviewChart({ data }: { data: SpendingPoint[] }) {
+export default function SpendingOverviewChart({ data }: Readonly<{ data: SpendingPoint[] }>) {
   return (
     <ResponsiveContainer width="100%" height={180}>
       <AreaChart data={data}>
@@ -32,4 +32,3 @@ export default function SpendingOverviewChart({ data }: { data: SpendingPoint[] 
     </ResponsiveContainer>
   )
 }
-

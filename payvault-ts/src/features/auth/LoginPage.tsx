@@ -16,6 +16,14 @@ const fieldValidators = {
   otp: otpSchema,
 } as const
 
+const getLoginSubmitText = (mode: LoginMode, otpSent: boolean, loading: boolean) => {
+  if (loading && mode === 'password') return 'Signing in...'
+  if (loading && otpSent) return 'Verifying OTP...'
+  if (loading) return 'Sending OTP...'
+  if (mode === 'password') return 'Sign In ->'
+  return otpSent ? 'Verify OTP ->' : 'Send OTP ->'
+}
+
 export default function LoginPage() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
@@ -146,6 +154,11 @@ export default function LoginPage() {
     }
   }
 
+  const handleSubmit = mode === 'password' ? handlePasswordLogin : (otpSent ? handleOtpLogin : handleSendOtp)
+  const submitText = getLoginSubmitText(mode, otpSent, loading)
+  const passwordIconName = showPass ? 'eyeOff' : 'eye'
+  const passwordButtonLabel = showPass ? 'Hide password' : 'Show password'
+
   return (
     <div>
       <div className="mb-7">
@@ -173,7 +186,7 @@ export default function LoginPage() {
         ))}
       </div>
 
-      <form onSubmit={mode === 'password' ? handlePasswordLogin : otpSent ? handleOtpLogin : handleSendOtp} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div>
           <label htmlFor="email" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
             Email Address
@@ -230,12 +243,10 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setShowPass(p => !p)}
                 className="absolute right-3 top-1/2 -translate-y-1/2"
-                aria-label={showPass ? 'Hide password' : 'Show password'}
+                aria-label={passwordButtonLabel}
                 style={{ color: 'var(--text-muted)' }}
               >
-                {showPass
-                  ? <Icon8 name="eyeOff" size={18} className="opacity-80" />
-                  : <Icon8 name="eye" size={18} className="opacity-80" />}
+                <Icon8 name={passwordIconName} size={18} className="opacity-80" />
               </button>
             </div>
             {touched.password && errors.password && (
@@ -296,19 +307,15 @@ export default function LoginPage() {
         )}
 
         <button type="submit" disabled={loading} className="w-full btn-primary py-3 text-sm">
-          {loading
-            ? <span className="flex items-center justify-center gap-2">
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
                 <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                {mode === 'password' ? 'Signing in...' : otpSent ? 'Verifying OTP...' : 'Sending OTP...'}
+                {submitText}
               </span>
-            : mode === 'password'
-              ? 'Sign In ->'
-              : otpSent
-                ? 'Verify OTP ->'
-                : 'Send OTP ->'}
+          ) : submitText}
         </button>
       </form>
 

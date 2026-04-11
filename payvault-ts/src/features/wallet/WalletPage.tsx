@@ -7,10 +7,9 @@ import { fetchBalance, fetchTransactions, transferFunds, withdrawFunds, createPa
 import { fetchRewardSummary } from '../../store/rewardsSlice'
 import { walletService, rewardsService, userService } from '../../services'
 import { getApiErrorMessage } from '../../shared/apiErrors'
-import { Modal, ConfirmDialog, SuccessOverlay, Skeleton, EmptyState } from '../../shared/components/ui'
+import { Modal, ConfirmDialog, SuccessOverlay, Skeleton, EmptyState, StatusBadge } from '../../shared/components/ui'
 import { ScratchCardModal } from '../../shared/components/ScratchCard'
 import { formatCurrency, formatDate, getTransferCounterparty, getTransactionAmountDisplay, getTxIcon, generateKey, calcPoints } from '../../shared/utils'
-import { StatusBadge } from '../../shared/components/ui'
 import type { RecipientSearchItem, RazorpayOptions, RazorpayPaymentFailure, TransferRequest } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
 import { createTransferSchema, createWithdrawSchema, getFirstError, topupAmountSchema } from '../../shared/validation'
@@ -32,6 +31,26 @@ const RAZORPAY_METHODS = [
 const HIDDEN_BALANCE_TEXT = '••••••'
 
 let razorpayScriptPromise: Promise<void> | null = null
+const transactionSkeletonKeys = ['wallet-tx-skeleton-1', 'wallet-tx-skeleton-2', 'wallet-tx-skeleton-3', 'wallet-tx-skeleton-4']
+const recipientSearchSkeletonKeys = ['recipient-skeleton-1', 'recipient-skeleton-2', 'recipient-skeleton-3']
+
+const recipientLabel = (recipient: RecipientSearchItem | null, receiverId: string) => {
+  if (!recipient) return receiverId ? `User #${receiverId}` : 'Recipient'
+  const name = recipient.fullName || `User #${recipient.id}`
+  return recipient.phone ? `${name} (${recipient.phone})` : name
+}
+
+const transactionDescriptor = (counterparty: string | null, description?: string, referenceId?: string) => {
+  if (!counterparty) return description || referenceId
+  if (description && description !== 'Transfer') return `${counterparty} - ${description}`
+  return counterparty
+}
+
+const transactionToneStyle = (tone: 'credit' | 'debit' | 'muted') => {
+  if (tone === 'credit') return { background: '#dcfce7', color: '#15803d', amountColor: 'var(--success)' }
+  if (tone === 'debit') return { background: '#fee2e2', color: '#b91c1c', amountColor: 'var(--danger)' }
+  return { background: 'var(--bg-card)', color: 'var(--text-muted)', amountColor: 'var(--text-muted)' }
+}
 
 const RAZORPAY_DOWN_MESSAGE = 'Razorpay is temporarily unavailable. Please try again in a few minutes or use another payment method.'
 
@@ -79,8 +98,8 @@ const shouldInterceptRazorpayAlert = (message: string) => {
 }
 
 function loadRazorpayScript(): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve()
-  if (window.Razorpay) return Promise.resolve()
+  if (typeof globalThis.window === 'undefined') return Promise.resolve()
+  if (globalThis.window.Razorpay) return Promise.resolve()
   if (razorpayScriptPromise) return razorpayScriptPromise
 
   razorpayScriptPromise = new Promise((resolve, reject) => {
@@ -198,11 +217,7 @@ export default function WalletPage() {
     setRecipientError('')
   }
 
-  const recipientDisplay = selectedRecipient
-    ? `${selectedRecipient.fullName || `User #${selectedRecipient.id}`}${selectedRecipient.phone ? ` (${selectedRecipient.phone})` : ''}`
-    : transfer.receiverId
-      ? `User #${transfer.receiverId}`
-      : 'Recipient'
+  const recipientDisplay = recipientLabel(selectedRecipient, transfer.receiverId)
   const transferValidationSchema = createTransferSchema(user?.id)
   const withdrawValidationSchema = createWithdrawSchema(balance?.balance ?? 0)
 
@@ -226,9 +241,9 @@ export default function WalletPage() {
     }
 
     setActionLoading(true)
-    const originalAlert = window.alert.bind(window)
+    const originalAlert = globalThis.window.alert.bind(globalThis.window)
     const restoreAlert = () => {
-      window.alert = originalAlert
+      globalThis.window.alert = originalAlert
     }
 
     try {
@@ -285,7 +300,7 @@ export default function WalletPage() {
           closeTopupFlow()
         }
       }
-      window.alert = (message?: string) => {
+      globalThis.window.alert = (message?: string) => {
         const text = String(message || '').trim()
         if (!text) return
         if (shouldInterceptRazorpayAlert(text)) {
@@ -353,13 +368,13 @@ export default function WalletPage() {
         }
       }
 
-      if (!window.Razorpay) {
+      if (!globalThis.window.Razorpay) {
         toast.error('Payment gateway not loaded. Please refresh.')
         setActionLoading(false)
         return
       }
 
-      const rzp = new window.Razorpay(options)
+      const rzp = new globalThis.window.Razorpay(options)
       const handlePaymentFailed = async (response?: RazorpayPaymentFailure) => {
         restoreAlert()
         rzp.close()
@@ -390,8 +405,8 @@ export default function WalletPage() {
   const handleScratchRevealed = async (pts: number) => {
     try {
       await rewardsService.earnInternal(user!.id, scratchAmount)
-    } catch (_) {
-      // Ignore reward sync failures after transfer scratch-card reveal.
+    } catch (error) {
+      console.warn('Reward sync failed after scratch-card reveal', error)
     }
     dispatch(fetchRewardSummary())
     notify('success', `+${pts} Points Added!`, `Reward points for your transfer of ${formatCurrency(scratchAmount)}`)
@@ -461,6 +476,14 @@ export default function WalletPage() {
   const walletStatusLine = balance?.lastUpdated
     ? `${balance?.status ?? 'ACTIVE'} · Last updated ${formatDate(balance.lastUpdated, 'hh:mm A')}`
     : (balance?.status ?? 'ACTIVE')
+  const topupButtonLabel = actionLoading
+    ? 'Processing…'
+    : `Pay ${topupAmount ? formatCurrency(Number.parseFloat(topupAmount)) : '—'} via Razorpay`
+  const transferRewardPoints = calcPoints(Number.parseFloat(transfer.amount) || 0)
+  const withdrawButtonLabel = `Withdraw ${withdrawAmount ? formatCurrency(Number.parseFloat(withdrawAmount)) : '—'}`
+  const confirmAmount = modal === 'transfer'
+    ? Number.parseFloat(transfer.amount)
+    : Number.parseFloat(withdrawAmount)
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-4xl mx-auto">
@@ -514,7 +537,7 @@ export default function WalletPage() {
             )}
           <div className="text-xs mb-5" style={{ color: '#4ade80' }}>{walletStatusLine}</div>
 
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Wallet actions">
+          <fieldset className="flex flex-wrap gap-2" aria-label="Wallet actions">
             {[
               { label: 'Top Up', icon: 'topup', key: 'topup', bg: '#22c55e' },
               { label: 'Transfer', icon: 'transfer', key: 'transfer', bg: 'rgba(255,255,255,0.12)' },
@@ -540,7 +563,7 @@ export default function WalletPage() {
                 {btn.label}
               </motion.button>
             ))}
-          </div>
+          </fieldset>
         </div>
       </motion.div>
 
@@ -553,8 +576,8 @@ export default function WalletPage() {
         {txLoading
           ? (
             <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3">
+              {transactionSkeletonKeys.map(key => (
+                <div key={key} className="flex items-center gap-3">
                   <Skeleton className="w-10 h-10 rounded-xl" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-3 w-2/3" />
@@ -565,17 +588,19 @@ export default function WalletPage() {
               ))}
             </div>
           )
-          : txList.length === 0
-            ? <EmptyState icon={<Icon8 name="wallet" size={34} />} title="No transactions yet" description="Top up or transfer to see activity here." />
-            : (
+          : null}
+        {!txLoading && txList.length === 0
+          ? <EmptyState icon={<Icon8 name="wallet" size={34} />} title="No transactions yet" description="Top up or transfer to see activity here." />
+          : null}
+        {!txLoading && txList.length > 0
+          ? (
               <div className="space-y-1">
                 {txList.map((tx, i) => {
                   const TxIcon = getTxIcon(tx.type)
                   const amountDisplay = getTransactionAmountDisplay(tx, user?.id)
                   const counterparty = getTransferCounterparty(tx, user?.id)
-                  const descriptor = counterparty
-                    ? `${counterparty}${tx.description && tx.description !== 'Transfer' ? ` - ${tx.description}` : ''}`
-                    : (tx.description || tx.referenceId)
+                  const descriptor = transactionDescriptor(counterparty, tx.description, tx.referenceId)
+                  const toneStyle = transactionToneStyle(amountDisplay.tone)
 
                   return (
                     <motion.div
@@ -589,8 +614,8 @@ export default function WalletPage() {
                       <div
                         className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
                         style={{
-                          background: amountDisplay.tone === 'credit' ? '#dcfce7' : amountDisplay.tone === 'debit' ? '#fee2e2' : 'var(--bg-card)',
-                          color: amountDisplay.tone === 'credit' ? '#15803d' : amountDisplay.tone === 'debit' ? '#b91c1c' : 'var(--text-muted)',
+                          background: toneStyle.background,
+                          color: toneStyle.color,
                         }}
                       >
                         <TxIcon fontSize="inherit" />
@@ -607,13 +632,7 @@ export default function WalletPage() {
                       <div className="text-right flex-shrink-0">
                         <div
                           className="text-sm font-bold"
-                          style={{
-                            color: amountDisplay.tone === 'credit'
-                              ? 'var(--success)'
-                              : amountDisplay.tone === 'debit'
-                                ? 'var(--danger)'
-                                : 'var(--text-muted)',
-                          }}
+                          style={{ color: toneStyle.amountColor }}
                           title={amountDisplay.tooltip}
                         >
                           {amountDisplay.value}
@@ -628,7 +647,7 @@ export default function WalletPage() {
                   )
                 })}
               </div>
-            )}
+            ) : null}
       </motion.div>
 
       <Modal open={modal === 'topup'} onClose={() => setModal(null)} title="Top Up Wallet">
@@ -691,7 +710,7 @@ export default function WalletPage() {
             </div>
           </div>
           <button onClick={() => handleTopup()} disabled={actionLoading || !topupAmount} className="w-full btn-primary py-3 text-sm">
-            {actionLoading ? 'Processing…' : `Pay ${topupAmount ? formatCurrency(Number.parseFloat(topupAmount)) : '—'} via Razorpay`}
+            {topupButtonLabel}
           </button>
         </div>
       </Modal>
@@ -761,7 +780,7 @@ export default function WalletPage() {
 
               {!selectedRecipient && (isRecipientSearchDebouncing || recipientLoading) && (
                 <div className="space-y-2">
-                  {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-2xl" />)}
+                  {recipientSearchSkeletonKeys.map(key => <Skeleton key={key} className="h-14 rounded-2xl" />)}
                 </div>
               )}
 
@@ -843,7 +862,7 @@ export default function WalletPage() {
           <div className="p-3 rounded-xl text-xs" style={{ background: 'var(--bg-primary)', color: 'var(--text-muted)' }}>
             <span className="inline-flex items-center gap-1">
               <Icon8 name="star" size={14} />
-              Earn <strong style={{ color: 'var(--brand)' }}>{calcPoints(Number.parseFloat(transfer.amount) || 0)} reward points</strong> on this transfer via scratch card.
+              Earn <strong style={{ color: 'var(--brand)' }}>{transferRewardPoints} reward points</strong> on this transfer via scratch card.
             </span>
           </div>
 
@@ -906,7 +925,7 @@ export default function WalletPage() {
             className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all active:scale-95"
             style={{ background: '#f59e0b' }}
           >
-            Withdraw {withdrawAmount ? formatCurrency(Number.parseFloat(withdrawAmount)) : '—'}
+            {withdrawButtonLabel}
           </button>
         </div>
       </Modal>
@@ -917,7 +936,7 @@ export default function WalletPage() {
         onConfirm={modal === 'transfer' ? handleTransferConfirm : handleWithdrawConfirm}
         title={modal === 'transfer' ? 'Confirm Transfer' : 'Confirm Withdrawal'}
         message={modal === 'transfer' ? `Send to ${recipientDisplay}` : 'Funds will be transferred to your bank'}
-        amount={modal === 'transfer' ? Number.parseFloat(transfer.amount) : Number.parseFloat(withdrawAmount)}
+        amount={confirmAmount}
         loading={actionLoading}
       />
     </div>

@@ -12,6 +12,15 @@ import { getApiErrorMessage } from '../../shared/apiErrors'
 import { getFirstError, roleSelectionSchema } from '../../shared/validation'
 import { syncSession, updateCurrentUser } from '../../store/authSlice'
 
+const userSkeletonKeys = [
+  'user-skeleton-1',
+  'user-skeleton-2',
+  'user-skeleton-3',
+  'user-skeleton-4',
+  'user-skeleton-5',
+  'user-skeleton-6',
+]
+
 export function AdminUsers() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
@@ -248,8 +257,8 @@ export function AdminUsers() {
         {loading
           ? (
             <div className="p-5 space-y-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex gap-3">
+              {userSkeletonKeys.map(key => (
+                <div key={key} className="flex gap-3">
                   <Skeleton className="w-9 h-9 rounded-xl" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-3 w-1/2" />

@@ -24,6 +24,26 @@ const classifyRedeemKind = (description?: string | null): 'CATALOG' | 'POINTS' =
   return 'CATALOG'
 }
 
+const transactionSkeletonKeys = [
+  'transactions-skeleton-1',
+  'transactions-skeleton-2',
+  'transactions-skeleton-3',
+  'transactions-skeleton-4',
+  'transactions-skeleton-5',
+]
+
+const transactionDescriptor = (counterparty: string | null, description?: string, referenceId?: string) => {
+  if (!counterparty) return description || `Ref: ${referenceId}`
+  if (description && description !== 'Transfer') return `${counterparty} - ${description}`
+  return counterparty
+}
+
+const transactionToneStyle = (tone: 'credit' | 'debit' | 'muted', mutedColor: string) => {
+  if (tone === 'credit') return { background: '#dcfce7', color: '#15803d', amountColor: 'var(--success)' }
+  if (tone === 'debit') return { background: '#fee2e2', color: '#b91c1c', amountColor: 'var(--danger)' }
+  return { background: 'var(--bg-primary)', color: mutedColor, amountColor: mutedColor }
+}
+
 export function TransactionsPage() {
   const dispatch = useAppDispatch()
   const { isDark } = useTheme()
@@ -35,7 +55,7 @@ export function TransactionsPage() {
   const [page, setPage] = useState(0)
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [downloading, setDl] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [exportFormat, setExportFormat] = useState<'CSV' | 'PDF'>('CSV')
 
@@ -50,7 +70,7 @@ export function TransactionsPage() {
   const download = async () => {
     const dateRangeResult = transactionDateRangeSchema.safeParse({ from, to })
     if (!dateRangeResult.success) { toast.error(getFirstError(dateRangeResult.error)); return }
-    setDl(true)
+    setDownloading(true)
     try {
       const resp = await walletService.downloadStatement(user!.id, dateRangeResult.data.from, dateRangeResult.data.to)
       const url = URL.createObjectURL(resp.data as Blob)
@@ -62,7 +82,7 @@ export function TransactionsPage() {
     } catch {
       toast.error('Download failed')
     } finally {
-      setDl(false)
+      setDownloading(false)
     }
   }
 
@@ -73,13 +93,6 @@ export function TransactionsPage() {
     setPdfLoading(true)
     try {
       const { data: rows } = await walletService.statement(user!.id, dateRangeResult.data.from, dateRangeResult.data.to)
-      const printWindow = window.open('', '_blank', 'width=1200,height=900')
-
-      if (!printWindow) {
-        toast.error('Allow pop-ups to export PDF')
-        return
-      }
-
       const escapeHtml = (value?: string | number | null) => String(value ?? '')
         .split('&').join('&amp;')
         .split('<').join('&lt;')
@@ -92,9 +105,7 @@ export function TransactionsPage() {
         : rows.map(tx => {
             const amountDisplay = getTransactionAmountDisplay(tx, user?.id)
             const counterparty = getTransferCounterparty(tx, user?.id)
-            const details = counterparty
-              ? `${counterparty}${tx.description && tx.description !== 'Transfer' ? ` - ${tx.description}` : ''}`
-              : (tx.description || tx.referenceId || '-')
+            const details = transactionDescriptor(counterparty, tx.description, tx.referenceId) || '-'
 
             return `
               <tr>
@@ -161,16 +172,20 @@ export function TransactionsPage() {
     <tbody>${tableRows}</tbody>
   </table>
   <script>
-    window.onload = function () {
-      setTimeout(function () { window.print(); }, 250);
+    globalThis.onload = function () {
+      setTimeout(function () { globalThis.print(); }, 250);
     };
   </script>
 </body>
 </html>`
 
-      printWindow.document.open()
-      printWindow.document.write(html)
-      printWindow.document.close()
+      const htmlUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }))
+      const printWindow = globalThis.open(htmlUrl, '_blank', 'width=1200,height=900')
+      if (!printWindow) {
+        URL.revokeObjectURL(htmlUrl)
+        toast.error('Allow pop-ups to export PDF')
+        return
+      }
       toast.success('PDF export opened')
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'PDF export failed'))
@@ -222,9 +237,9 @@ export function TransactionsPage() {
             className="btn-primary py-2.5 text-sm flex items-center gap-2"
           >
             <span aria-hidden="true" className="inline-flex"><Icon8 name="transactions" size={14} /></span>
-            {exportFormat === 'PDF'
-              ? (pdfLoading ? 'Preparing PDF...' : 'Export Statement')
-              : (downloading ? 'Downloading...' : 'Export Statement')}
+            {pdfLoading ? 'Preparing PDF...' : null}
+            {!pdfLoading && downloading ? 'Downloading...' : null}
+            {!pdfLoading && !downloading ? 'Export Statement' : null}
           </button>
         </div>
       </motion.div>
@@ -241,7 +256,7 @@ export function TransactionsPage() {
 
       {tab === 'txn' && (
         <>
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter transactions">
+          <fieldset className="flex flex-wrap gap-2" aria-label="Filter transactions">
             {(['ALL', ...TX_TYPES] as const).map(f => {
               if (f === 'ALL') {
                 return (
@@ -271,11 +286,11 @@ export function TransactionsPage() {
                 </button>
               )
             })}
-          </div>
+          </fieldset>
 
           <motion.div className="card overflow-hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {txLoading ? (
-              <div className="p-5 space-y-3">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="flex gap-3"><Skeleton className="w-10 h-10 rounded-xl" /><div className="flex-1 space-y-2"><Skeleton className="h-3 w-2/3" /><Skeleton className="h-3 w-1/2" /></div><Skeleton className="h-4 w-20" /></div>)}</div>
+              <div className="p-5 space-y-3">{transactionSkeletonKeys.map(key => <div key={key} className="flex gap-3"><Skeleton className="w-10 h-10 rounded-xl" /><div className="flex-1 space-y-2"><Skeleton className="h-3 w-2/3" /><Skeleton className="h-3 w-1/2" /></div><Skeleton className="h-4 w-20" /></div>)}</div>
             ) : filter === 'REDEEM' ? (
               redeemRows.length === 0 ? (
                 <div className="text-center py-12"><div className="inline-flex mb-3"><Icon8 name="info" size={36} /></div><p style={{ color: 'var(--text-muted)' }}>No redeem history found</p></div>
@@ -350,16 +365,15 @@ export function TransactionsPage() {
                     const TxIcon = getTxIcon(tx.type)
                     const amountDisplay = getTransactionAmountDisplay(tx, user?.id)
                     const counterparty = getTransferCounterparty(tx, user?.id)
-                    const descriptor = counterparty
-                      ? `${counterparty}${tx.description && tx.description !== 'Transfer' ? ` - ${tx.description}` : ''}`
-                      : (tx.description || `Ref: ${tx.referenceId}`)
+                    const descriptor = transactionDescriptor(counterparty, tx.description, tx.referenceId)
+                    const toneStyle = transactionToneStyle(amountDisplay.tone, softMuted)
                     return (
                       <motion.div key={tx.id} className="flex items-center gap-4 px-5 py-4"
                         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
                           style={{
-                            background: amountDisplay.tone === 'credit' ? '#dcfce7' : amountDisplay.tone === 'debit' ? '#fee2e2' : 'var(--bg-primary)',
-                            color: amountDisplay.tone === 'credit' ? '#15803d' : amountDisplay.tone === 'debit' ? '#b91c1c' : softMuted,
+                            background: toneStyle.background,
+                            color: toneStyle.color,
                           }}>
                           <TxIcon fontSize="inherit" />
                         </div>
@@ -373,13 +387,7 @@ export function TransactionsPage() {
                         <div className="text-right flex-shrink-0">
                           <div
                             className="font-bold text-sm"
-                            style={{
-                              color: amountDisplay.tone === 'credit'
-                                ? 'var(--success)'
-                                : amountDisplay.tone === 'debit'
-                                  ? 'var(--danger)'
-                                  : softMuted,
-                            }}
+                            style={{ color: toneStyle.amountColor }}
                             title={amountDisplay.tooltip}
                           >
                             {amountDisplay.value}

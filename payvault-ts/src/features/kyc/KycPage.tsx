@@ -216,13 +216,13 @@ export function KycPage() {
 
             <div>
               <label htmlFor="kyc-document-file" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Upload Document</label>
-              <div
+              <label
+                htmlFor="kyc-document-file"
                 className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all"
                 style={{
                   borderColor: fileError ? 'var(--danger)' : (drag || file ? 'var(--brand)' : 'var(--border)'),
                   background: drag || file ? 'var(--brand-light)' : 'var(--bg-primary)',
                 }}
-                onClick={() => fileRef.current?.click()}
                 onDragOver={e => { e.preventDefault(); setDrag(true) }}
                 onDragLeave={() => setDrag(false)}
                 onDrop={e => {
@@ -230,10 +230,6 @@ export function KycPage() {
                   setDrag(false)
                   if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0])
                 }}
-                role="button"
-                tabIndex={0}
-                aria-label="Upload document file"
-                onKeyDown={e => e.key === 'Enter' && fileRef.current?.click()}
               >
                 <input
                   ref={fileRef}
@@ -258,7 +254,7 @@ export function KycPage() {
                     <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>PNG, JPG, PDF | Max {MAX_FILE_SIZE_MB}MB</div>
                   </>
                 )}
-              </div>
+              </label>
               {fileError && (
                 <p className="text-xs mt-1.5 font-medium" style={{ color: 'var(--danger)' }}>{fileError}</p>
               )}

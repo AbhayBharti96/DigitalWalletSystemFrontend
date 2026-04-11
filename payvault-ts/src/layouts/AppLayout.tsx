@@ -114,8 +114,8 @@ export default function AppLayout() {
       setProfilePhoto(cached || null)
     }
     syncPhoto()
-    window.addEventListener('payvault-profile-photo-updated', syncPhoto)
-    return () => window.removeEventListener('payvault-profile-photo-updated', syncPhoto)
+    globalThis.addEventListener('payvault-profile-photo-updated', syncPhoto)
+    return () => globalThis.removeEventListener('payvault-profile-photo-updated', syncPhoto)
   }, [user?.id])
 
   const SidebarInner = ({ onNav }: { onNav?: () => void }) => (
@@ -317,35 +317,37 @@ export default function AppLayout() {
                         )}
                       </div>
                     </div>
-                    <div className="max-h-72 overflow-y-auto" role="list">
+                    <ul className="max-h-72 overflow-y-auto">
                       {notifications.length === 0
                         ? (
-                          <div className="py-8 text-center">
+                          <li className="py-8 text-center">
                             <div className="mb-2 inline-flex"><Icon8 name="bell" size={28} /></div>
                             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No notifications</p>
-                          </div>
+                          </li>
                         )
                         : notifications.map(n => (
-                          <button key={n.id} role="menuitem"
-                            onClick={() => dispatch(markRead(n.id))}
-                            className="w-full text-left flex gap-3 px-4 py-3 border-b transition-opacity hover:opacity-80"
-                            style={{ borderColor: 'var(--border)', background: n.read ? 'transparent' : 'var(--bg-primary)' }}>
-                            <span className="mt-0.5 inline-flex" aria-hidden="true">
-                              <Icon8
-                                name={n.type === 'success' ? 'success' : n.type === 'error' ? 'error' : n.type === 'warning' ? 'warning' : 'info'}
-                                size={18}
-                              />
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{n.title}</p>
-                              <p className="text-xs line-clamp-2 mt-0.5" style={{ color: 'var(--text-secondary)' }}>{n.message}</p>
-                              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{timeAgo(n.time)}</p>
-                            </div>
-                            {!n.read && <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: 'var(--brand)' }} aria-hidden="true" />}
-                          </button>
+                          <li key={n.id}>
+                            <button role="menuitem"
+                              onClick={() => dispatch(markRead(n.id))}
+                              className="w-full text-left flex gap-3 px-4 py-3 border-b transition-opacity hover:opacity-80"
+                              style={{ borderColor: 'var(--border)', background: n.read ? 'transparent' : 'var(--bg-primary)' }}>
+                              <span className="mt-0.5 inline-flex" aria-hidden="true">
+                                <Icon8
+                                  name={n.type === 'success' ? 'success' : n.type === 'error' ? 'error' : n.type === 'warning' ? 'warning' : 'info'}
+                                  size={18}
+                                />
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{n.title}</p>
+                                <p className="text-xs line-clamp-2 mt-0.5" style={{ color: 'var(--text-secondary)' }}>{n.message}</p>
+                                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{timeAgo(n.time)}</p>
+                              </div>
+                              {!n.read && <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0" style={{ background: 'var(--brand)' }} aria-hidden="true" />}
+                            </button>
+                          </li>
                         ))
                       }
-                    </div>
+                    </ul>
                   </motion.div>
                 )}
               </AnimatePresence>

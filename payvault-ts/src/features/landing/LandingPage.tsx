@@ -34,7 +34,7 @@ const staticStats = [
   { label: 'User onboarding', value: 'KYC-ready' },
 ]
 
-function FloatingCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function FloatingCard({ children, className = '' }: Readonly<{ children: React.ReactNode; className?: string }>) {
   return (
     <motion.div
       animate={{ y: [0, -10, 0] }}
@@ -147,11 +147,10 @@ export default function LandingPage() {
                 className="max-w-3xl text-5xl font-bold leading-tight md:text-6xl"
                 style={{ color: isDark ? '#ffffff' : '#0f172a' }}
               >
-                Secure money movement,
+                Secure money movement,{' '}
                 <span className="bg-gradient-to-r from-green-300 via-green-400 to-indigo-300 bg-clip-text text-transparent">
-                  {' '}reward journeys,
-                </span>
-                {' '}
+                  reward journeys,
+                </span>{' '}
                 and smooth KYC in one sleek experience.
               </motion.h1>
 
@@ -260,7 +259,7 @@ export default function LandingPage() {
                     </div>
                     <div className="flex h-40 items-end gap-3">
                       {[40, 72, 58, 90, 66, 108, 84].map((h, i) => (
-                        <div key={i} className="flex-1 rounded-t-2xl" style={{ background: 'linear-gradient(to top,#22c55e,#818cf8)', height: `${h}%` }} />
+                        <div key={`activity-bar-${h}-${i}`} className="flex-1 rounded-t-2xl" style={{ background: 'linear-gradient(to top,#22c55e,#818cf8)', height: `${h}%` }} />
                       ))}
                     </div>
                     <div className="mt-4 flex justify-between text-xs text-slate-400">
@@ -326,20 +325,19 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            {[
+            {([
               ['shield', 'Protected access', 'Clear trust signals and premium visual hierarchy.'],
               ['wallet', 'Top-up journeys', 'Elegant payment entry points with CTA emphasis.'],
               ['bell', 'Live feeling', 'Notification-ready top bar with polished action affordances.'],
               ['transactions', 'Modern UI', 'Gradients, motion, and device-friendly layout.'],
-            ].map(([Icon, title, text], i) => {
-              const iconName = Icon as Icon8Name
+            ] satisfies Array<[Icon8Name, string, string]>).map(([iconName, title, text]) => {
               return (
-                <div key={i} className="rounded-[28px] border p-6" style={{ borderColor: 'var(--border-strong)', background: 'var(--bg-secondary)' }}>
+                <div key={title} className="rounded-[28px] border p-6" style={{ borderColor: 'var(--border-strong)', background: 'var(--bg-secondary)' }}>
                   <div className="inline-flex rounded-2xl p-3" style={{ color: '#ffffff', background: 'linear-gradient(145deg, rgba(34,197,94,0.9), rgba(129,140,248,0.82))', border: '1px solid rgba(255,255,255,0.16)' }}>
                     <Icon8 name={iconName} size={30} />
                   </div>
-                  <h3 className="mt-4 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{title as string}</h3>
-                  <p className="mt-2" style={{ color: 'var(--text-secondary)' }}>{text as string}</p>
+                  <h3 className="mt-4 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</h3>
+                  <p className="mt-2" style={{ color: 'var(--text-secondary)' }}>{text}</p>
                 </div>
               )
             })}

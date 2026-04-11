@@ -146,10 +146,10 @@ export default function App() {
     const handleFocus = () => { void syncProfile() }
 
     void syncProfile()
-    window.addEventListener('focus', handleFocus)
+    globalThis.addEventListener('focus', handleFocus)
     return () => {
       active = false
-      window.removeEventListener('focus', handleFocus)
+      globalThis.removeEventListener('focus', handleFocus)
     }
   }, [accessToken, refreshToken, user?.id, user?.role, user?.kycStatus, user?.fullName, user?.phone, user?.status, user?.email, dispatch])
 

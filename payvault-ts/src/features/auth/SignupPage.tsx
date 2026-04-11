@@ -31,6 +31,12 @@ const nameInputValue = (value: string) =>
     char === '-'
   ).join('')
 
+const signupFieldValue = (field: keyof FormState, value: string) => {
+  if (field === 'phone') return digitsOnly(value).slice(0, 10)
+  if (field === 'fullName') return nameInputValue(value)
+  return value
+}
+
 export default function SignupPage() {
   const dispatch = useAppDispatch()
   const { loading } = useAppSelector(s => s.auth)
@@ -45,11 +51,7 @@ export default function SignupPage() {
   const strengthColor = ['#ef4444', '#f97316', '#f59e0b', '#22c55e', '#16a34a'][strength]
 
   const setField = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextValue = k === 'phone'
-      ? digitsOnly(e.target.value).slice(0, 10)
-      : k === 'fullName'
-        ? nameInputValue(e.target.value)
-        : e.target.value
+    const nextValue = signupFieldValue(k, e.target.value)
     setForm(p => ({ ...p, [k]: nextValue }))
     setErrors(p => ({ ...p, [k]: '' }))
   }
@@ -123,7 +125,8 @@ export default function SignupPage() {
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Join PayVault today - it is free</p>
       </div>
 
-      <div className="flex items-center mb-6" role="progressbar" aria-valuenow={step} aria-valuemin={0} aria-valuemax={1} aria-label="Signup progress">
+      <progress className="sr-only" value={step} max={1}>Signup progress</progress>
+      <div className="flex items-center mb-6" aria-hidden="true">
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center flex-1">
             <div className="flex items-center gap-2">
@@ -176,9 +179,9 @@ export default function SignupPage() {
               {form.password && (
                 <div className="mt-2">
                   <div className="flex gap-1 mb-1.5">
-                    {[0, 1, 2, 3].map(i => (
+                    {['strength-1', 'strength-2', 'strength-3', 'strength-4'].map((key, i) => (
                       <div
-                        key={i}
+                        key={key}
                         className="h-1.5 flex-1 rounded-full"
                         style={{ background: i < strength ? strengthColor : 'var(--border)' }}
                       />

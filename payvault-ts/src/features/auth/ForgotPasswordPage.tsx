@@ -226,9 +226,9 @@ export default function ForgotPasswordPage() {
               {newPassword && (
                 <div className="mt-2">
                   <div className="flex gap-1 mb-1.5">
-                    {[0, 1, 2, 3].map(i => (
+                    {['strength-1', 'strength-2', 'strength-3', 'strength-4'].map((key, i) => (
                       <div
-                        key={i}
+                        key={key}
                         className="h-1.5 flex-1 rounded-full"
                         style={{ background: i < strength ? strengthColor : 'var(--border)' }}
                       />

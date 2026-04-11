@@ -189,8 +189,8 @@ export const LoadingScreen: React.FC = () => (
         P
       </div>
       <div className="flex gap-1.5">
-        {[0, 1, 2].map(i => (
-          <motion.div key={i} className="w-2 h-2 rounded-full" style={{ background: 'var(--brand)' }}
+        {['loading-dot-1', 'loading-dot-2', 'loading-dot-3'].map((key, i) => (
+          <motion.div key={key} className="w-2 h-2 rounded-full" style={{ background: 'var(--brand)' }}
             animate={{ y: [0, -8, 0] }} transition={{ duration: 0.6, delay: i * 0.15, repeat: Infinity }} />
         ))}
       </div>

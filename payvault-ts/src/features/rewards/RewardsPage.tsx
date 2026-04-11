@@ -14,7 +14,7 @@ import { createRewardPointsSchema, getFirstError } from '../../shared/validation
 const redeemedCatalogStorageKey = (userId: number) => `payvault:redeemed-catalog:${userId}`
 
 const readRedeemedCatalogIds = (userId?: number) => {
-  if (!userId || typeof window === 'undefined') return [] as number[]
+  if (!userId || typeof globalThis.window === 'undefined') return [] as number[]
   try {
     const raw = localStorage.getItem(redeemedCatalogStorageKey(userId))
     const parsed = raw ? JSON.parse(raw) : []
@@ -25,9 +25,25 @@ const readRedeemedCatalogIds = (userId?: number) => {
 }
 
 const persistRedeemedCatalogIds = (userId: number, ids: number[]) => {
-  if (typeof window === 'undefined') return
+  if (typeof globalThis.window === 'undefined') return
   localStorage.setItem(redeemedCatalogStorageKey(userId), JSON.stringify(ids))
 }
+
+const rewardActionLabel = (item: RewardItem, userPoints: number) => {
+  if (!item.active) return 'Unavailable'
+  if (item.stock === 0) return 'Out of Stock'
+  if (userPoints < item.pointsRequired) return `Need ${(item.pointsRequired - userPoints).toLocaleString()} more pts`
+  return 'Redeem Now'
+}
+
+const rewardsCatalogSkeletonKeys = [
+  'reward-catalog-skeleton-1',
+  'reward-catalog-skeleton-2',
+  'reward-catalog-skeleton-3',
+  'reward-catalog-skeleton-4',
+  'reward-catalog-skeleton-5',
+  'reward-catalog-skeleton-6',
+]
 
 // ── Redeem success animation overlay ────────────────────────────────────────
 const RedeemSuccessModal: React.FC<{ coupon?: string; itemName: string; onClose: () => void }> = ({ coupon, itemName, onClose }) => (
@@ -122,10 +138,7 @@ const RewardCard: React.FC<{ item: RewardItem; userPoints: number; onRedeem: (it
           aria-label={canRedeem ? `Redeem ${item.name} for ${item.pointsRequired} points` : 'Cannot redeem'}
           aria-disabled={!canRedeem}
         >
-          {!item.active ? 'Unavailable'
-            : item.stock === 0 ? 'Out of Stock'
-            : userPoints < item.pointsRequired ? `Need ${(item.pointsRequired - userPoints).toLocaleString()} more pts`
-            : 'Redeem Now'}
+          {rewardActionLabel(item, userPoints)}
         </motion.button>
       </div>
     </motion.div>
@@ -329,16 +342,21 @@ export default function RewardsPage() {
       {/* Catalog */}
       {tab === 'catalog' && (
         <div role="tabpanel" aria-label="Rewards catalog">
-          {loading
-            ? <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-52 w-full" />)}</div>
-            : visibleCatalog.length === 0
-              ? <div className="card p-12 text-center"><div className="inline-flex mb-3"><Icon8 name="rewards" size={40} /></div><p style={{ color: 'var(--text-muted)' }}>No rewards available</p></div>
-              : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {visibleCatalog.map(item => (
-                    <RewardCard key={item.id} item={item} userPoints={pts} onRedeem={setConfirmItem} />
-                  ))}
-                </div>
-          }
+          {loading ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {rewardsCatalogSkeletonKeys.map(key => <Skeleton key={key} className="h-52 w-full" />)}
+            </div>
+          ) : null}
+          {!loading && visibleCatalog.length === 0 ? (
+            <div className="card p-12 text-center"><div className="inline-flex mb-3"><Icon8 name="rewards" size={40} /></div><p style={{ color: 'var(--text-muted)' }}>No rewards available</p></div>
+          ) : null}
+          {!loading && visibleCatalog.length > 0 ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {visibleCatalog.map(item => (
+                <RewardCard key={item.id} item={item} userPoints={pts} onRedeem={setConfirmItem} />
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
 

@@ -11,6 +11,17 @@ import { Icon8 } from '../../shared/components/Icon8'
 
 const SpendingOverviewChart = lazy(() => import('./SpendingOverviewChart'))
 
+const dashboardCardValue = (enabled: boolean, loading: boolean, visibleValue: string, lockedValue = '--') => {
+  if (!enabled) return lockedValue
+  return loading ? '...' : visibleValue
+}
+
+const nextTierSubText = (enabled: boolean, nextTier: string | undefined, points: number, targetForNextTier: number) => {
+  if (!enabled) return 'Locked until KYC approval'
+  if (!nextTier) return 'Max tier unlocked'
+  return `${points.toLocaleString()} / ${targetForNextTier.toLocaleString()} pts to ${nextTier}`
+}
+
 const lightCardShadow = '0 12px 28px -18px rgba(15,23,42,0.32), 0 3px 8px -3px rgba(15,23,42,0.12)'
 const HIDDEN_BALANCE_TEXT = '••••••'
 
@@ -116,6 +127,18 @@ export default function DashboardPage() {
     const raw = denom > 0 ? points / denom : 1
     return Math.max(0, Math.min(1, raw))
   })()
+  const walletBalanceValue = dashboardCardValue(
+    canAccessFinancialFeatures,
+    wLoad,
+    showDashboardBalance ? formatCurrency(balance?.balance ?? 0) : HIDDEN_BALANCE_TEXT,
+  )
+  const rewardPointsValue = dashboardCardValue(canAccessFinancialFeatures, rLoad, points.toLocaleString())
+  const nextTierProgressValue = dashboardCardValue(
+    canAccessFinancialFeatures,
+    rLoad,
+    nextTier ? `${tierProgressPct}%` : '100%',
+  )
+  const nextTierProgressSub = nextTierSubText(canAccessFinancialFeatures, nextTier, points, targetForNextTier)
 
   return (
     <div className="p-3 lg:p-5 space-y-4 max-w-[1080px] mx-auto">
@@ -210,7 +233,7 @@ export default function DashboardPage() {
           label="Wallet Balance"
           delay={0}
           isDark={isDark}
-          value={canAccessFinancialFeatures ? (wLoad ? '...' : (showDashboardBalance ? formatCurrency(balance?.balance ?? 0) : HIDDEN_BALANCE_TEXT)) : '--'}
+          value={walletBalanceValue}
           sub={canAccessFinancialFeatures ? (
             <span className="inline-flex items-center gap-2">
               <span>Status: {balance?.status ?? 'INACTIVE'}</span>
@@ -239,7 +262,7 @@ export default function DashboardPage() {
           iconColor={tierS.text}
           delay={0.05}
           isDark={isDark}
-          value={canAccessFinancialFeatures ? (rLoad ? '...' : points.toLocaleString()) : '--'}
+          value={rewardPointsValue}
           sub={canAccessFinancialFeatures
             ? <span className="inline-flex items-center gap-1" style={{ color: tierS.text }}><TierIcon fontSize="inherit" /> {currentTier}</span>
             : 'Complete KYC to unlock rewards'}
@@ -252,8 +275,8 @@ export default function DashboardPage() {
           iconColor={nextTier ? nextTierStyle.text : '#6366f1'}
           delay={0.1}
           isDark={isDark}
-          value={canAccessFinancialFeatures ? (rLoad ? '...' : (nextTier ? `${tierProgressPct}%` : '100%')) : '--'}
-          sub={canAccessFinancialFeatures ? (nextTier ? `${points.toLocaleString()} / ${targetForNextTier.toLocaleString()} pts to ${nextTier}` : 'Max tier unlocked') : 'Locked until KYC approval'}
+          value={nextTierProgressValue}
+          sub={nextTierProgressSub}
           onClick={() => navigate(canAccessFinancialFeatures ? '/rewards' : '/kyc')}
         />
         <StatCard icon={<Icon8 name="shield" size={24} />} label="KYC Status" color={kycI.color} delay={0.15} isDark={isDark} value={user?.kycStatus?.replace('_', ' ') ?? '-'} sub={kycI.label} onClick={() => navigate('/kyc')} />
@@ -336,7 +359,7 @@ export default function DashboardPage() {
           <h3 className="text-sm font-bold" style={{ color: '#1d2b44' }}>Quick Actions</h3>
           <span className="text-[10px] font-semibold" style={{ color: '#98a6b6' }}>Fast access</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" role="group" aria-label="Quick actions">
+        <fieldset className="grid grid-cols-2 sm:grid-cols-4 gap-3" aria-label="Quick actions">
           {([
             { icon: 'topup', label: 'Top Up', to: '/wallet', color: '#22c55e' },
             { icon: 'transfer', label: 'Transfer', to: '/wallet', color: '#6366f1' },
@@ -359,7 +382,7 @@ export default function DashboardPage() {
               <span className="text-xs font-semibold" style={{ color: '#44566f' }}>{a.label}</span>
             </motion.button>
           ))}
-        </div>
+        </fieldset>
       </motion.div>
     </div>
   )

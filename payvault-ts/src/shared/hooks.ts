@@ -26,7 +26,7 @@ export const useAuth = () => {
     try {
       const rt = sessionStorage.getItem('refreshToken') || localStorage.getItem('refreshToken')
       if (rt) await authService.logout(rt)
-    } catch (_) {
+    } catch {
       // Ignore logout API failures and continue clearing local auth state.
     }
     dispatch(logout())

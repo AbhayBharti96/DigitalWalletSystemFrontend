@@ -41,14 +41,14 @@ const tierRank = (tier?: RewardSummary['tier']) => (tier ? TIER_RANK[tier] : 0)
 const maxTierStorageKey = (userId: number) => `payvault:max-reward-tier:${userId}`
 
 const readMaxTier = (userId: number): RewardSummary['tier'] | undefined => {
-  if (typeof window === 'undefined') return undefined
+  if (typeof globalThis.window === 'undefined') return undefined
   const v = localStorage.getItem(maxTierStorageKey(userId))
   if (v === 'SILVER' || v === 'GOLD' || v === 'PLATINUM') return v
   return undefined
 }
 
 const writeMaxTier = (userId: number, tier: RewardSummary['tier']): void => {
-  if (typeof window === 'undefined') return
+  if (typeof globalThis.window === 'undefined') return
   localStorage.setItem(maxTierStorageKey(userId), tier)
 }
 

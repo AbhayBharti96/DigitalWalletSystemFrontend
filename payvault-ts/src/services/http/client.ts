@@ -66,7 +66,7 @@ apiClient.interceptors.response.use(
 
     if (!refreshToken) {
       clearClientAuth()
-      window.location.href = '/login'
+      globalThis.location.href = '/login'
       return Promise.reject(error)
     }
 
@@ -85,7 +85,7 @@ apiClient.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError)
       clearClientAuth()
-      window.location.href = '/login'
+      globalThis.location.href = '/login'
       return Promise.reject(refreshError)
     } finally {
       isRefreshing = false
