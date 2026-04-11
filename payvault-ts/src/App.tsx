@@ -41,6 +41,7 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false)
   const [kycReady, setKycReady] = useState(false)
   const authSyncedRef = useRef(false)
+  const profileSyncUnavailableRef = useRef(false)
 
   useEffect(() => {
     if (accessToken) dispatch(seedNotifications())
@@ -92,6 +93,11 @@ export default function App() {
     let active = true
 
     const syncProfile = async () => {
+      if (profileSyncUnavailableRef.current) {
+        if (active) setAuthReady(true)
+        return
+      }
+
       if (!user?.id) {
         if (active) setAuthReady(true)
         return
@@ -137,7 +143,10 @@ export default function App() {
         ) {
           dispatch(updateCurrentUser(mergedUser))
         }
-      } catch {
+      } catch (error: any) {
+        if (error?.response?.status === 404) {
+          profileSyncUnavailableRef.current = true
+        }
         // Leave cached auth state in place if profile sync fails.
       } finally {
         if (active) setAuthReady(true)

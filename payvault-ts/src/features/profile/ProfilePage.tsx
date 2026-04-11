@@ -62,7 +62,19 @@ export function ProfilePage() {
     setLoading(true)
     try {
       const [{ data: profileResp }, { data: kycResp }] = await Promise.all([
-        userService.getProfile(user!.id),
+        userService.getProfile(user!.id).catch((error: any) => {
+          if (error?.response?.status === 404) {
+            return {
+              data: {
+                success: true,
+                message: 'Profile endpoint unavailable',
+                data: user!,
+                timestamp: new Date().toISOString(),
+              },
+            }
+          }
+          throw error
+        }),
         kycService.status(user!.id),
       ])
 

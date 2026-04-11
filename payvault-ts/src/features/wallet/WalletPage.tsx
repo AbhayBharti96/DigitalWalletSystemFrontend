@@ -275,9 +275,9 @@ export default function WalletPage() {
       const reportCancelledPayment = async (paymentId?: string) => {
         try {
           await walletService.cancelPayment(user.id, {
-            razorpayOrderId: orderId,
-            razorpayPaymentId: paymentId ?? '',
-            razorpaySignature: '',
+            razorpay_order_id: orderId,
+            razorpay_payment_id: paymentId ?? '',
+            razorpay_signature: '',
           })
         } catch {
           // Keep the user on the wallet page even if the cancel callback errors.
@@ -290,9 +290,9 @@ export default function WalletPage() {
         const reason = failure?.error?.description?.trim() || 'Payment failed in Razorpay checkout'
         try {
           await walletService.markPaymentFailed(user.id, {
-            razorpayOrderId: orderId,
-            razorpayPaymentId: paymentId,
-            razorpaySignature: '',
+            razorpay_order_id: orderId,
+            razorpay_payment_id: paymentId,
+            razorpay_signature: '',
           }, reason)
         } catch {
           // Preserve the user flow even if the failure callback itself errors.
@@ -332,9 +332,9 @@ export default function WalletPage() {
         handler: async (response) => {
           try {
             await walletService.verifyPayment(user.id, {
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
             })
 
             setModal(null)
