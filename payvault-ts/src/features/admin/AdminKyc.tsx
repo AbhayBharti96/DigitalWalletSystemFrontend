@@ -82,13 +82,14 @@ export function AdminKyc() {
       return
     }
     const rejectionReason = reasonResult.success ? reasonResult.data : ''
+    const resubmitUrl = new URL('/kyc', globalThis.location.origin).toString()
     setActioning(true)
     setActiveAction(approve ? 'approve' : 'reject')
     try {
       if (approve) {
         await adminService.approveKyc(selected.kycId, role, user.email)
       } else {
-        await adminService.rejectKyc(selected.kycId, rejectionReason, role, user.email)
+        await adminService.rejectKyc(selected.kycId, rejectionReason, role, user.email, resubmitUrl)
       }
       toast.success(approve ? 'KYC Approved' : 'KYC Rejected')
       setSelected(null)
@@ -228,10 +229,10 @@ export function AdminKyc() {
                           onChange={e => setReason(e.target.value)}
                           className="input-field w-full resize-none"
                           rows={5}
-                          placeholder="Tell the user why this KYC was rejected. This note should also be sent by the backend email flow."
+                          placeholder="Explain what is missing or incorrect so the user can fix it and resubmit."
                         />
                         <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                          Rejecting requires a note. The backend should use this note in the rejection email and the user should see the same reason on the resubmission screen.
+                          Add a clear note. The user will see this reason when reviewing the rejected submission and preparing a new one.
                         </p>
                       </div>
 

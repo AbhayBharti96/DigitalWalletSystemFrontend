@@ -32,14 +32,18 @@ describe('adminService', () => {
   it('calls kyc moderation endpoints with role and email headers', () => {
     adminService.pendingKyc('ADMIN', 2)
     adminService.approveKyc(12, 'ADMIN', 'admin@example.com')
-    adminService.rejectKyc(12, 'Missing document', 'ADMIN', 'admin@example.com')
+    adminService.rejectKyc(12, 'Missing document', 'ADMIN', 'admin@example.com', 'https://payvault.app/kyc')
 
     expect(apiClientMock.get).toHaveBeenCalledWith('/api/admin/kyc/pending?page=2', { headers: { 'X-UserRole': 'ADMIN' } })
     expect(apiClientMock.post).toHaveBeenNthCalledWith(1, '/api/admin/kyc/12/approve', {}, {
       headers: { 'X-UserRole': 'ADMIN', 'X-UserEmail': 'admin@example.com' },
     })
     expect(apiClientMock.post).toHaveBeenNthCalledWith(2, '/api/admin/kyc/12/reject?reason=Missing%20document', {}, {
-      headers: { 'X-UserRole': 'ADMIN', 'X-UserEmail': 'admin@example.com' },
+      headers: {
+        'X-UserRole': 'ADMIN',
+        'X-UserEmail': 'admin@example.com',
+        'X-Kyc-Resubmit-Url': 'https://payvault.app/kyc',
+      },
     })
   })
 
