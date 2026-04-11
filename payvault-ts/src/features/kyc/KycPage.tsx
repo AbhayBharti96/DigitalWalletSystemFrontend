@@ -22,6 +22,7 @@ export function KycPage() {
   const notify = useNotify()
   const { isDark } = useTheme()
   const { user } = useAppSelector(s => s.auth)
+  const isAdmin = user?.role === 'ADMIN'
   const [kycData, setKycData] = useState<KycStatusResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -93,6 +94,10 @@ export function KycPage() {
   }
 
   const canSubmit = !kycData || kycData.status === 'REJECTED' || kycData.status === 'NOT_SUBMITTED'
+  const submitHeading = kycData?.status === 'REJECTED' ? 'Resubmit KYC' : 'Submit KYC Documents'
+  const submitDescription = kycData?.status === 'REJECTED'
+    ? 'Update the document details below and upload a corrected file to restart review.'
+    : `Accepted: Aadhaar, PAN, Passport, Driving License | Max ${MAX_FILE_SIZE_MB}MB`
   if (loading) {
     return (
       <div className="p-6 flex justify-center h-64 items-center">
@@ -117,7 +122,7 @@ export function KycPage() {
       <div>
         <h1 className="text-xl font-display font-bold" style={{ color: 'var(--text-primary)' }}>KYC Verification</h1>
         <p className="text-sm mt-0.5" style={{ color: isDark ? '#9fb4d7' : 'var(--text-secondary)' }}>
-          Verify your identity to unlock all wallet features
+          {isAdmin ? 'Submit your KYC details and review the current verification status.' : 'Verify your identity to unlock all wallet features'}
         </p>
       </div>
 
@@ -141,7 +146,10 @@ export function KycPage() {
                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: kycI.bg, color: kycI.color }}>{kycData.status}</span>
               </div>
               {kycData.status === 'REJECTED' && kycData.rejectionReason && (
-                <p className="text-sm mb-2" style={{ color: 'var(--danger)' }}>Reason: {kycData.rejectionReason}</p>
+                <div className="mb-3 rounded-xl border p-3" style={{ borderColor: '#fecaca', background: '#fef2f2' }}>
+                  <p className="text-sm font-semibold" style={{ color: '#b91c1c' }}>Rejected by admin</p>
+                  <p className="text-sm mt-1" style={{ color: '#991b1b' }}>{kycData.rejectionReason}</p>
+                </div>
               )}
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {kycDetailRows.map(([k, v]) => (
@@ -171,11 +179,9 @@ export function KycPage() {
 
       {canSubmit && (
         <motion.div className="card p-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <h2 className="font-display font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-            {kycData?.status === 'REJECTED' ? 'Resubmit KYC' : 'Submit KYC Documents'}
-          </h2>
+          <h2 className="font-display font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>{submitHeading}</h2>
           <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>
-            Accepted: Aadhaar, PAN, Passport, Driving License | Max {MAX_FILE_SIZE_MB}MB
+            {submitDescription}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -218,7 +224,7 @@ export function KycPage() {
               <label htmlFor="kyc-document-file" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Upload Document</label>
               <label
                 htmlFor="kyc-document-file"
-                className="border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all"
+                className="flex min-h-[220px] flex-col items-center justify-center border-2 border-dashed rounded-2xl px-6 py-8 text-center cursor-pointer transition-all"
                 style={{
                   borderColor: fileError ? 'var(--danger)' : (drag || file ? 'var(--brand)' : 'var(--border)'),
                   background: drag || file ? 'var(--brand-light)' : 'var(--bg-primary)',
@@ -241,7 +247,7 @@ export function KycPage() {
                 />
                 {file ? (
                   <>
-                    <div className="inline-flex mb-1"><Icon8 name="kyc" size={30} /></div>
+                    <div className="inline-flex mb-2"><Icon8 name="kyc" size={30} /></div>
                     <div className="font-medium text-sm" style={{ color: 'var(--brand)' }}>{file.name}</div>
                     <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                       {(file.size / (1024 * 1024)).toFixed(2)} MB | Max {MAX_FILE_SIZE_MB}MB | Click to replace
@@ -249,7 +255,7 @@ export function KycPage() {
                   </>
                 ) : (
                   <>
-                    <div className="inline-flex mb-1"><Icon8 name="overview" size={30} /></div>
+                    <div className="inline-flex mb-2"><Icon8 name="overview" size={30} /></div>
                     <div className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Drag and drop or click to upload</div>
                     <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>PNG, JPG, PDF | Max {MAX_FILE_SIZE_MB}MB</div>
                   </>

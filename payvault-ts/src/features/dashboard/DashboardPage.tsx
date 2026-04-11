@@ -81,9 +81,10 @@ export default function DashboardPage() {
     dispatch(fetchRewardSummary())
   }, [dispatch, user?.id, user?.kycStatus])
 
+  const isAdmin = user?.role === 'ADMIN'
   const kycI = getKycInfo(user?.kycStatus)
   const KycIcon = kycI.icon
-  const canAccessFinancialFeatures = user?.kycStatus === 'APPROVED'
+  const canAccessFinancialFeatures = user?.kycStatus === 'APPROVED' || isAdmin
   const tierS = getTierStyle(summary?.tier)
   const TierIcon = getTierIcon(summary?.tier)
   const currentTier = (summary?.tier ?? 'SILVER').toUpperCase()
@@ -93,7 +94,7 @@ export default function DashboardPage() {
   const targetForNextTier = points + pointsToNextTier
   const tierProgressPct = targetForNextTier > 0 ? Math.round((points / targetForNextTier) * 100) : 100
   const nextTierStyle = getTierStyle(summary?.nextTier)
-  const showKycBanner = user?.kycStatus === 'NOT_SUBMITTED'
+  const showKycBanner = !isAdmin && user?.kycStatus === 'NOT_SUBMITTED'
   const currentMonth = dayjs()
   const currentMonthLabel = currentMonth.format('MMMM YYYY')
   const currentMonthTransactions = canAccessFinancialFeatures

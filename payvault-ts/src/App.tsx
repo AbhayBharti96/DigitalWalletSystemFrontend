@@ -27,10 +27,11 @@ const AdminCatalog     = lazy(() => import('./features/admin/AdminCatalog'))
 // ── Guards ─────────────────────────────────────────────────────────────────────
 const RequireAuth: React.FC<{ requireKyc?: boolean; adminOnly?: boolean; kycReady?: boolean }> = ({ requireKyc, adminOnly, kycReady = true }) => {
   const { accessToken, user } = useAppSelector(s => s.auth)
+  const bypassKycGate = user?.role === 'ADMIN'
   if (!accessToken) return <Navigate to="/login" replace />
   if (adminOnly && user?.role !== 'ADMIN') return <Navigate to="/dashboard" replace />
-  if (requireKyc && !kycReady) return <LoadingScreen />
-  if (requireKyc && user?.kycStatus !== 'APPROVED') return <Navigate to="/kyc" replace />
+  if (requireKyc && !bypassKycGate && !kycReady) return <LoadingScreen />
+  if (requireKyc && !bypassKycGate && user?.kycStatus !== 'APPROVED') return <Navigate to="/kyc" replace />
   return <Outlet />
 }
 
@@ -46,11 +47,11 @@ export default function App() {
   }, [accessToken, dispatch])
 
   useEffect(() => {
-    if (!accessToken || user?.kycStatus !== 'APPROVED') {
+    if (!accessToken || (user?.role !== 'ADMIN' && user?.kycStatus !== 'APPROVED')) {
       dispatch(resetWalletState())
       dispatch(resetRewardsState())
     }
-  }, [accessToken, user?.kycStatus, dispatch])
+  }, [accessToken, user?.kycStatus, user?.role, dispatch])
 
   useEffect(() => {
     if (!accessToken) {

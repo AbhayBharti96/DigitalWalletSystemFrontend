@@ -194,6 +194,20 @@ export function AdminUsers() {
                     </select>
                     <button onClick={handleRole} disabled={!roleTo || actioning} className="btn-primary px-4 py-2 text-xs flex-shrink-0">Apply</button>
                   </div>
+                  {selected.kycStatus === 'PENDING' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelected(null)
+                        navigate('/admin/kyc')
+                      }}
+                      className="w-full py-2.5 rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2"
+                      style={{ background: '#fef3c7', color: '#b45309' }}
+                    >
+                      <Icon8 name="review" size={14} />
+                      Review KYC Submission
+                    </button>
+                  )}
                   <div className="flex gap-3">
                     {selected.status === 'ACTIVE'
                       ? (
