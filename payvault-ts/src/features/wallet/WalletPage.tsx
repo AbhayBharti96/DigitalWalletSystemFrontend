@@ -16,6 +16,18 @@ import { createTransferSchema, createWithdrawSchema, getFirstError, topupAmountS
 
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000]
 const RAZORPAY_SCRIPT_URL = 'https://checkout.razorpay.com/v1/checkout.js'
+const RAZORPAY_METHOD_LABELS = {
+  upi: 'UPI',
+  card: 'Card',
+  wallet: 'Wallet',
+  netbanking: 'Netbanking',
+} as const
+const RAZORPAY_METHODS = [
+  { key: 'upi', title: 'UPI', description: 'Open Razorpay directly in UPI mode.' },
+  { key: 'card', title: 'Card', description: 'Jump straight to debit and credit card checkout.' },
+  { key: 'wallet', title: 'Wallet', description: 'Use supported wallets inside Razorpay.' },
+  { key: 'netbanking', title: 'Netbanking', description: 'Choose your bank from Razorpay netbanking.' },
+] as const
 const HIDDEN_BALANCE_TEXT = '••••••'
 
 let razorpayScriptPromise: Promise<void> | null = null
@@ -218,7 +230,11 @@ export default function WalletPage() {
     setTimeout(() => setShowSuccess(false), 2400)
   }
 
-  const launchRazorpayCheckout = async (amount: number, description = 'Wallet Top-up') => {
+  const launchRazorpayCheckout = async (
+    amount: number,
+    preferredMethod?: keyof typeof RAZORPAY_METHOD_LABELS,
+    description = 'Wallet Top-up',
+  ) => {
     if (!user) {
       toast.error('User not logged in')
       return
@@ -262,6 +278,9 @@ export default function WalletPage() {
             razorpay_order_id: orderId,
             razorpay_payment_id: paymentId ?? '',
             razorpay_signature: '',
+            razorpayOrderId: orderId,
+            razorpayPaymentId: paymentId ?? '',
+            razorpaySignature: '',
           })
         } catch {
           // Keep the user on the wallet page even if the cancel callback errors.
@@ -277,6 +296,9 @@ export default function WalletPage() {
             razorpay_order_id: orderId,
             razorpay_payment_id: paymentId,
             razorpay_signature: '',
+            razorpayOrderId: orderId,
+            razorpayPaymentId: paymentId,
+            razorpaySignature: '',
           }, reason)
         } catch {
           // Preserve the user flow even if the failure callback itself errors.
@@ -319,6 +341,9 @@ export default function WalletPage() {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
             })
 
             setModal(null)
@@ -333,6 +358,23 @@ export default function WalletPage() {
             setActionLoading(false)
           }
         },
+      }
+
+      if (preferredMethod) {
+        options.config = {
+          display: {
+            blocks: {
+              preferred_method: {
+                name: `Pay with ${RAZORPAY_METHOD_LABELS[preferredMethod]}`,
+                instruments: [{ method: preferredMethod }],
+              },
+            },
+            sequence: ['block.preferred_method'],
+            preferences: {
+              show_default_blocks: false,
+            },
+          },
+        }
       }
 
       if (!globalThis.window.Razorpay) {
@@ -357,7 +399,7 @@ export default function WalletPage() {
     }
   }
 
-  const handleTopup = async () => {
+  const handleTopup = async (preferredMethod?: keyof typeof RAZORPAY_METHOD_LABELS) => {
     if (actionLoading) return
 
     const amountResult = topupAmountSchema.safeParse(topupAmount)
@@ -366,7 +408,7 @@ export default function WalletPage() {
       return
     }
 
-    await launchRazorpayCheckout(amountResult.data)
+    await launchRazorpayCheckout(amountResult.data, preferredMethod)
   }
 
   const handleScratchRevealed = async (pts: number) => {
@@ -656,6 +698,26 @@ export default function WalletPage() {
               Top-up adds wallet balance only. Reward scratch card is available on successful transfer.
             </span>
           </div>
+          <div>
+            <div className="text-xs mb-2 uppercase tracking-wider font-semibold" style={{ color: 'var(--text-secondary)' }}>
+              Choose payment option
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {RAZORPAY_METHODS.map(method => (
+                <button
+                  key={method.key}
+                  type="button"
+                  onClick={() => handleTopup(method.key)}
+                  disabled={actionLoading || !topupAmount}
+                  className="rounded-xl border px-4 py-3 text-left transition-all hover:-translate-y-0.5 disabled:opacity-60"
+                  style={{ borderColor: 'var(--border)', background: 'var(--bg-primary)' }}
+                >
+                  <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{method.title}</div>
+                  <div className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>{method.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
           <button onClick={() => handleTopup()} disabled={actionLoading || !topupAmount} className="w-full btn-primary py-3 text-sm">
             {topupButtonLabel}
           </button>
@@ -889,5 +951,4 @@ export default function WalletPage() {
     </div>
   )
 }
-
 
