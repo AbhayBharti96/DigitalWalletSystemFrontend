@@ -120,7 +120,16 @@ export const redeemPointsThunk = createAsyncThunk('rewards/redeemPoints', async 
 const rewardsSlice = createSlice({
   name: 'rewards',
   initialState: { summary: null, catalog: [], transactions: [], loading: false, error: null } as RewardsState,
-  reducers: { clearError(s) { s.error = null } },
+  reducers: {
+    clearError(s) { s.error = null },
+    resetRewardsState(s) {
+      s.summary = null
+      s.catalog = []
+      s.transactions = []
+      s.loading = false
+      s.error = null
+    },
+  },
   extraReducers: (b) => {
     b.addCase(fetchRewardSummary.pending, (s) => { s.loading = true })
     b.addCase(fetchRewardSummary.fulfilled, (s, { payload }) => {
@@ -132,5 +141,5 @@ const rewardsSlice = createSlice({
     b.addCase(fetchRewardTransactions.fulfilled, (s, { payload }) => { s.transactions = payload })
   },
 })
-export const { clearError: clearRewardsError } = rewardsSlice.actions
+export const { clearError: clearRewardsError, resetRewardsState } = rewardsSlice.actions
 export default rewardsSlice.reducer

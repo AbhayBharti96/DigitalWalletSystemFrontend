@@ -1,5 +1,5 @@
 // AuthLayout.tsx
-import { Outlet, Navigate, Link } from 'react-router-dom'
+import { Outlet, Navigate } from 'react-router-dom'
 import { useAppSelector } from '../shared/hooks'
 import { useTheme } from '../shared/hooks'
 import { motion } from 'framer-motion'

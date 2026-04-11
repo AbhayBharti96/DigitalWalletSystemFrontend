@@ -35,6 +35,12 @@ const getFileExt = (url?: string | null): string => {
   return dot >= 0 ? clean.slice(dot + 1).toLowerCase() : ''
 }
 
+const maskDocumentNumber = (value?: string) => {
+  if (!value) return '-'
+  if (value.length <= 4) return '•'.repeat(value.length)
+  return `${'•'.repeat(Math.max(value.length - 4, 0))}${value.slice(-4)}`
+}
+
 export function AdminKyc() {
   const { user } = useAppSelector(s => s.auth)
   const role = user?.role || 'ADMIN'
@@ -43,6 +49,7 @@ export function AdminKyc() {
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [selected, setSelected] = useState<KycStatusResponse | null>(null)
+  const [showSelectedDocNumber, setShowSelectedDocNumber] = useState(false)
   const [reason, setReason] = useState('')
   const [actioning, setActioning] = useState(false)
   const [docPreviewError, setDocPreviewError] = useState(false)
@@ -179,12 +186,25 @@ export function AdminKyc() {
                       ['Name', selected.userName],
                       ['Email', selected.userEmail],
                       ['Doc Type', selected.docType],
-                      ['Doc Number', selected.docNumber],
+                      ['Doc Number', showSelectedDocNumber ? selected.docNumber : maskDocumentNumber(selected.docNumber)],
                       ['Submitted', formatDate(selected.submittedAt)],
                     ].map(([k, v]) => (
                       <div key={k as string}>
                         <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{k}</div>
-                        <div className="font-medium mt-0.5" style={{ color: 'var(--text-primary)' }}>{v || '-'}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{v || '-'}</div>
+                          {k === 'Doc Number' && (
+                            <button
+                              type="button"
+                              onClick={() => setShowSelectedDocNumber(prev => !prev)}
+                              className="inline-flex items-center justify-center rounded-md p-1"
+                              style={{ color: 'var(--text-muted)' }}
+                              aria-label={showSelectedDocNumber ? 'Hide document number' : 'Show document number'}
+                            >
+                              <Icon8 name={showSelectedDocNumber ? 'eyeOff' : 'eye'} size={16} className="opacity-80" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -268,6 +288,7 @@ export function AdminKyc() {
                     onClick={() => {
                       setSelected(item)
                       setReason('')
+                      setShowSelectedDocNumber(false)
                       setDocPreviewError(false)
                     }}
                     className="btn-primary py-2 px-4 text-xs flex-shrink-0"

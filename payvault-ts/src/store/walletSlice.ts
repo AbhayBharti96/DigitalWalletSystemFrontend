@@ -48,7 +48,17 @@ export const createPaymentOrder = createAsyncThunk('payment/create-order', async
 const walletSlice = createSlice({
   name: 'wallet',
   initialState: { balance: null, transactions: null, ledger: null, loading: false, txLoading: false, error: null } as WalletState,
-  reducers: { clearError(s) { s.error = null } },
+  reducers: {
+    clearError(s) { s.error = null },
+    resetWalletState(s) {
+      s.balance = null
+      s.transactions = null
+      s.ledger = null
+      s.loading = false
+      s.txLoading = false
+      s.error = null
+    },
+  },
   extraReducers: (b) => {
     b.addCase(fetchBalance.pending, (s) => { s.loading = true })
     b.addCase(fetchBalance.fulfilled, (s, { payload }) => { s.loading = false; s.balance = payload })
@@ -59,5 +69,5 @@ const walletSlice = createSlice({
     b.addCase(fetchLedger.fulfilled, (s, { payload }) => { s.ledger = payload })
   },
 })
-export const { clearError: clearWalletError } = walletSlice.actions
+export const { clearError: clearWalletError, resetWalletState } = walletSlice.actions
 export default walletSlice.reducer

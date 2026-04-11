@@ -8,9 +8,9 @@ export const kycService = {
     return apiClient.post<ApiResponse<KycStatusResponse>>(
       `/api/kyc/submit?docType=${docType}&docNumber=${encodeURIComponent(docNumber)}`,
       formData,
-      { headers: { 'X-UserId': userId, 'Content-Type': 'multipart/form-data' } }
+      { headers: { 'X-User-Id': userId, 'Content-Type': 'multipart/form-data' } }
     )
   },
   status: (userId: number) =>
-    apiClient.get<ApiResponse<KycStatusResponse>>('/api/kyc/status', { headers: { 'X-UserId': userId } }),
+    apiClient.get<ApiResponse<KycStatusResponse>>('/api/kyc/status', { headers: { 'X-User-Id': userId } }),
 }

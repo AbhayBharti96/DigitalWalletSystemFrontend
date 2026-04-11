@@ -1,9 +1,11 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { useAppSelector, useAppDispatch } from './shared/hooks'
 import { seedNotifications } from './store/notificationSlice'
-import { kycService } from './services'
-import { updateKycStatus } from './store/authSlice'
+import { resetWalletState } from './store/walletSlice'
+import { resetRewardsState } from './store/rewardsSlice'
+import { authService, kycService, userService } from './services'
+import { syncSession, updateCurrentUser, updateKycStatus } from './store/authSlice'
 import { LoadingScreen, NotFoundPage } from './shared/components/ui'
 import AppLayout from './layouts/AppLayout'
 import AuthLayout from './layouts/AuthLayout'
@@ -34,12 +36,122 @@ const RequireAuth: React.FC<{ requireKyc?: boolean; adminOnly?: boolean; kycRead
 
 export default function App() {
   const dispatch = useAppDispatch()
-  const { accessToken, user } = useAppSelector(s => s.auth)
+  const { accessToken, refreshToken, user } = useAppSelector(s => s.auth)
+  const [authReady, setAuthReady] = useState(false)
   const [kycReady, setKycReady] = useState(false)
+  const authSyncedRef = useRef(false)
 
   useEffect(() => {
     if (accessToken) dispatch(seedNotifications())
   }, [accessToken, dispatch])
+
+  useEffect(() => {
+    if (!accessToken || user?.kycStatus !== 'APPROVED') {
+      dispatch(resetWalletState())
+      dispatch(resetRewardsState())
+    }
+  }, [accessToken, user?.kycStatus, dispatch])
+
+  useEffect(() => {
+    if (!accessToken) {
+      setAuthReady(true)
+      return
+    }
+
+    if (!accessToken || !refreshToken || authSyncedRef.current) return
+
+    let active = true
+    authSyncedRef.current = true
+    setAuthReady(false)
+
+    const syncAuthSession = async () => {
+      try {
+        const { data } = await authService.refresh(refreshToken)
+        if (active) {
+          dispatch(syncSession({
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            user: data.user,
+          }))
+        }
+      } catch {
+        // Let the normal auth interceptor/logout flow handle invalid refresh tokens.
+      } finally {
+        if (active) setAuthReady(true)
+      }
+    }
+
+    void syncAuthSession()
+    return () => { active = false }
+  }, [accessToken, refreshToken, dispatch])
+
+  useEffect(() => {
+    if (!accessToken) return
+
+    let active = true
+
+    const syncProfile = async () => {
+      if (!user?.id) {
+        if (active) setAuthReady(true)
+        return
+      }
+
+      try {
+        const { data } = await userService.getProfile(user.id)
+        const nextUser = data?.data
+        if (!active || !nextUser) return
+
+        const mergedUser = {
+          ...user,
+          ...nextUser,
+          role: nextUser.role || user.role,
+        }
+
+        if (nextUser.role && nextUser.role !== user.role && refreshToken) {
+          try {
+            const refreshed = await authService.refresh(refreshToken)
+            if (!active) return
+            if (refreshed.data.user?.role === nextUser.role) {
+              dispatch(syncSession({
+                accessToken: refreshed.data.accessToken,
+                refreshToken: refreshed.data.refreshToken,
+                user: refreshed.data.user,
+              }))
+            } else {
+              dispatch(updateCurrentUser(mergedUser))
+            }
+            return
+          } catch {
+            // Fall back to syncing the cached profile if token refresh fails.
+          }
+        }
+
+        if (
+          mergedUser.role !== user.role ||
+          mergedUser.kycStatus !== user.kycStatus ||
+          mergedUser.fullName !== user.fullName ||
+          mergedUser.phone !== user.phone ||
+          mergedUser.status !== user.status ||
+          mergedUser.email !== user.email
+        ) {
+          dispatch(updateCurrentUser(mergedUser))
+        }
+      } catch {
+        // Leave cached auth state in place if profile sync fails.
+      } finally {
+        if (active) setAuthReady(true)
+      }
+    }
+
+    const handleFocus = () => { void syncProfile() }
+
+    void syncProfile()
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      active = false
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [accessToken, refreshToken, user?.id, user?.role, user?.kycStatus, user?.fullName, user?.phone, user?.status, user?.email, dispatch])
 
   useEffect(() => {
     let active = true
@@ -67,6 +179,10 @@ export default function App() {
     void syncKycStatus()
     return () => { active = false }
   }, [accessToken, user?.id, user?.kycStatus, dispatch])
+
+  if (accessToken && !authReady) {
+    return <LoadingScreen />
+  }
 
   return (
     <Suspense fallback={<LoadingScreen />}>

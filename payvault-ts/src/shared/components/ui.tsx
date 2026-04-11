@@ -229,6 +229,9 @@ export const StatusBadge: React.FC<{ status?: string | null }> = ({ status }) =>
     FAILED: { bg: '#fee2e2', color: '#dc2626' }, REJECTED: { bg: '#fee2e2', color: '#dc2626' },
     BLOCKED: { bg: '#fee2e2', color: '#dc2626' },
     REVERSED: { bg: '#ede9fe', color: '#7c3aed' },
+    ADMIN: { bg: '#dcfce7', color: '#166534' },
+    USER: { bg: '#dbeafe', color: '#1d4ed8' },
+    MERCHANT: { bg: '#fef3c7', color: '#a16207' },
     NOT_SUBMITTED: { bg: 'var(--bg-primary)', color: 'var(--text-muted)' },
     INACTIVE: { bg: 'var(--bg-primary)', color: 'var(--text-muted)' },
   }

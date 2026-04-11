@@ -73,7 +73,11 @@ apiClient.interceptors.response.use(
     try {
       const { data } = await authClient.post<AuthResponse>('/api/auth/refresh', { refreshToken })
       saveTokens(data.accessToken, data.refreshToken)
-      notifyTokensRefreshed({ accessToken: data.accessToken, refreshToken: data.refreshToken })
+      if (data.user) {
+        sessionStorage.setItem('user', JSON.stringify(data.user))
+        localStorage.setItem('user', JSON.stringify(data.user))
+      }
+      notifyTokensRefreshed({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: data.user })
       apiClient.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`
       processQueue(null, data.accessToken)
       originalRequest.headers.Authorization = `Bearer ${data.accessToken}`

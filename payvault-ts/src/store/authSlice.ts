@@ -81,6 +81,15 @@ const authSlice = createSlice({
       state.accessToken = payload.accessToken
       state.refreshToken = payload.refreshToken
     },
+    syncSession(state, { payload }: PayloadAction<{ accessToken: string; refreshToken: string; user?: UserProfile }>) {
+      state.accessToken = payload.accessToken
+      state.refreshToken = payload.refreshToken
+      if (payload.user) {
+        state.user = payload.user
+        sessionStorage.setItem('user', JSON.stringify(payload.user))
+        localStorage.setItem('user', JSON.stringify(payload.user))
+      }
+    },
   },
   extraReducers: (b) => {
     b.addCase(loginUser.pending, (s) => { s.loading = true; s.error = null })
@@ -105,5 +114,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { logout, updateCurrentUser, updateKycStatus, clearError, setTokens } = authSlice.actions
+export const { logout, updateCurrentUser, updateKycStatus, clearError, setTokens, syncSession } = authSlice.actions
 export default authSlice.reducer

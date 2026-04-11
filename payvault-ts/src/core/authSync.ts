@@ -1,12 +1,18 @@
+import type { UserProfile } from '../types'
+
 /** Avoids importing the Redux store from `api.ts` (circular dependency). */
-export type AuthTokens = { accessToken: string; refreshToken: string }
+export type AuthSession = {
+  accessToken: string
+  refreshToken: string
+  user?: UserProfile
+}
 
-let onTokensRefreshed: ((t: AuthTokens) => void) | null = null
+let onTokensRefreshed: ((session: AuthSession) => void) | null = null
 
-export function registerAuthTokenSync(cb: (t: AuthTokens) => void): void {
+export function registerAuthTokenSync(cb: (session: AuthSession) => void): void {
   onTokensRefreshed = cb
 }
 
-export function notifyTokensRefreshed(tokens: AuthTokens): void {
-  onTokensRefreshed?.(tokens)
+export function notifyTokensRefreshed(session: AuthSession): void {
+  onTokensRefreshed?.(session)
 }

@@ -96,6 +96,23 @@ export const isCreditForUser = (tx: Transaction, currentUserId?: number) => {
   return isCredit(tx.type)
 }
 
+export const getTransactionAmountDisplay = (tx: Transaction, currentUserId?: number) => {
+  if (tx.status === 'FAILED') {
+    return {
+      value: formatCurrency(0),
+      tone: 'muted' as const,
+      tooltip: 'No amount was credited',
+    }
+  }
+
+  const credit = isCreditForUser(tx, currentUserId)
+  return {
+    value: `${credit ? '+' : '-'}${formatCurrency(tx.amount)}`,
+    tone: credit ? 'credit' as const : 'debit' as const,
+    tooltip: undefined,
+  }
+}
+
 export const getTransferCounterparty = (tx: Transaction, currentUserId?: number): string | null => {
   if (tx.type !== 'TRANSFER') return null
 

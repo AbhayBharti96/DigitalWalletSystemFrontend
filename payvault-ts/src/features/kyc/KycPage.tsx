@@ -11,6 +11,11 @@ import { getFirstError, kycDocumentNumberSchema, kycFileSchema } from '../../sha
 
 const DOC_TYPES: DocType[] = ['AADHAAR', 'PAN', 'PASSPORT', 'DRIVING_LICENSE']
 const MAX_FILE_SIZE_MB = 5
+const maskDocumentNumber = (value?: string) => {
+  if (!value) return '-'
+  if (value.length <= 4) return '•'.repeat(value.length)
+  return `${'•'.repeat(Math.max(value.length - 4, 0))}${value.slice(-4)}`
+}
 
 export function KycPage() {
   const dispatch = useAppDispatch()
@@ -22,6 +27,8 @@ export function KycPage() {
   const [submitting, setSubmitting] = useState(false)
   const [docType, setDocType] = useState<DocType>('AADHAAR')
   const [docNumber, setDocNumber] = useState('')
+  const [showDocNumber, setShowDocNumber] = useState(false)
+  const [showSubmittedDocNumber, setShowSubmittedDocNumber] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [drag, setDrag] = useState(false)
@@ -99,7 +106,7 @@ export function KycPage() {
   const kycDetailRows: [string, string][] = kycData
     ? [
         ['Doc Type', kycData.docType],
-        ['Doc Number', kycData.docNumber],
+        ['Doc Number', showSubmittedDocNumber ? kycData.docNumber : maskDocumentNumber(kycData.docNumber)],
         ['Submitted', formatDate(kycData.submittedAt, 'DD MMM YYYY')],
         ...(kycData.updatedAt ? [['Updated', formatDate(kycData.updatedAt, 'DD MMM YYYY')]] as [string, string][] : []),
       ]
@@ -140,7 +147,20 @@ export function KycPage() {
                 {kycDetailRows.map(([k, v]) => (
                   <div key={k}>
                     <div style={{ color: isDark ? '#8ca0c1' : 'var(--text-muted)' }}>{k}</div>
-                    <div className="font-semibold font-mono tracking-wide" style={{ color: isDark ? '#eef4ff' : 'var(--text-primary)' }}>{v}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="font-semibold font-mono tracking-wide" style={{ color: isDark ? '#eef4ff' : 'var(--text-primary)' }}>{v}</div>
+                      {k === 'Doc Number' && (
+                        <button
+                          type="button"
+                          onClick={() => setShowSubmittedDocNumber(prev => !prev)}
+                          className="inline-flex items-center justify-center rounded-md p-1"
+                          style={{ color: isDark ? '#8ca0c1' : 'var(--text-muted)' }}
+                          aria-label={showSubmittedDocNumber ? 'Hide document number' : 'Show document number'}
+                        >
+                          <Icon8 name={showSubmittedDocNumber ? 'eyeOff' : 'eye'} size={16} className="opacity-80" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -172,15 +192,26 @@ export function KycPage() {
               <label htmlFor="docNumber" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
                 Document Number
               </label>
-              <input
-                id="docNumber"
-                type="text"
-                placeholder="e.g. ABCDE1234F"
-                value={docNumber}
-                onChange={e => setDocNumber(e.target.value)}
-                className="input-field font-mono"
-                required
-              />
+              <div className="relative">
+                <input
+                  id="docNumber"
+                  type={showDocNumber ? 'text' : 'password'}
+                  placeholder="e.g. ABCDE1234F"
+                  value={docNumber}
+                  onChange={e => setDocNumber(e.target.value)}
+                  className="input-field font-mono pr-12"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowDocNumber(prev => !prev)}
+                  className="absolute inset-y-0 right-3 inline-flex items-center justify-center"
+                  style={{ color: 'var(--text-muted)' }}
+                  aria-label={showDocNumber ? 'Hide document number' : 'Show document number'}
+                >
+                  <Icon8 name={showDocNumber ? 'eyeOff' : 'eye'} size={18} className="opacity-80" />
+                </button>
+              </div>
             </div>
 
             <div>

@@ -5,6 +5,7 @@ import { useAppDispatch, useTheme, useAuth, useClickOutside, useAppSelector } fr
 import { markAllRead, markRead, clearAll } from '../store/notificationSlice'
 import { timeAgo } from '../shared/utils'
 import { Icon8 } from '../shared/components/Icon8'
+import { ConfirmDialog } from '../shared/components/ui'
 
 interface NavItem {
   to: string
@@ -80,13 +81,28 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [sidebarProfileOpen, setSidebarProfileOpen] = useState(false)
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
 
   const notifRef  = useClickOutside(useCallback(() => setNotifOpen(false), []))
   const menuRef   = useClickOutside(useCallback(() => setMenuOpen(false), []))
+  const sidebarProfileRef = useClickOutside(useCallback(() => setSidebarProfileOpen(false), []))
 
   const isAdmin = user?.role === 'ADMIN'
   const initial = (user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
+
+  const requestLogout = () => {
+    setMenuOpen(false)
+    setSidebarProfileOpen(false)
+    setLogoutConfirmOpen(true)
+  }
+
+  const handleLogoutConfirm = () => {
+    setLogoutConfirmOpen(false)
+    setSidebarOpen(false)
+    logout()
+  }
 
   useEffect(() => {
     if (!user?.id) {
@@ -129,28 +145,70 @@ export default function AppLayout() {
 
       {/* User chip */}
       <div className="p-3 border-t" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
-          <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg,#22c55e,#6366f1)' }}>
-            {profilePhoto ? <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" /> : initial}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{user?.fullName || 'User'}</div>
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{user?.role}</div>
-          </div>
+        <div className="relative" ref={sidebarProfileRef}>
+          <button
+            type="button"
+            onClick={() => setSidebarProfileOpen(prev => !prev)}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left"
+            style={{ background: 'var(--bg-primary)' }}
+            aria-haspopup="true"
+            aria-expanded={sidebarProfileOpen}
+            aria-label="Open user options"
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg,#22c55e,#6366f1)' }}>
+              {profilePhoto ? <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" /> : initial}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{user?.fullName || 'User'}</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{user?.role}</div>
+            </div>
+            <span aria-hidden="true" style={{ color: 'var(--text-muted)' }}>
+              <svg className={`w-4 h-4 transition-transform ${sidebarProfileOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </span>
+          </button>
+
+          <AnimatePresence>
+            {sidebarProfileOpen && (
+              <motion.div
+                className="mt-2 rounded-xl overflow-hidden"
+                style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)' }}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+              >
+                {([{ label: 'Profile', icon: 'profile', to: '/profile' }, { label: 'KYC Status', icon: 'kyc', to: '/kyc' }] as const).map(item => (
+                  <button
+                    key={item.to}
+                    type="button"
+                    onClick={() => {
+                      onNav?.()
+                      setSidebarProfileOpen(false)
+                      navigate(item.to)
+                    }}
+                    className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm hover:opacity-80 transition-opacity"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    <span aria-hidden="true"><Icon8 name={item.icon} size={16} /></span>
+                    {item.label}
+                  </button>
+                ))}
+                <div className="border-t" style={{ borderColor: 'var(--border)' }} />
+                <button
+                  type="button"
+                  onClick={requestLogout}
+                  className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm hover:opacity-80 transition-opacity"
+                  style={{ color: 'var(--danger)' }}
+                >
+                  <span aria-hidden="true"><Icon8 name="logout" size={16} /></span>
+                  Sign Out
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        <button
-          onClick={() => {
-            onNav?.()
-            logout()
-          }}
-          className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-85"
-          style={{ background: 'var(--bg-primary)', border: '1px solid var(--border)', color: 'var(--danger)' }}
-          aria-label="Sign out"
-        >
-          <Icon8 name="logout" size={16} />
-          <span>Sign Out</span>
-        </button>
       </div>
     </div>
   )
@@ -323,7 +381,7 @@ export default function AppLayout() {
                       </button>
                     ))}
                     <div className="border-t my-1" style={{ borderColor: 'var(--border)' }} />
-                    <button role="menuitem" onClick={logout}
+                    <button role="menuitem" onClick={requestLogout}
                       className="w-full text-left flex items-center gap-3 px-4 py-2.5 text-sm hover:opacity-80 transition-opacity"
                       style={{ color: 'var(--danger)' }}>
                       <span aria-hidden="true"><Icon8 name="logout" size={16} /></span>Sign Out
@@ -340,6 +398,16 @@ export default function AppLayout() {
           <div className="page-enter"><Outlet /></div>
         </main>
       </div>
+
+      <ConfirmDialog
+        open={logoutConfirmOpen}
+        onClose={() => setLogoutConfirmOpen(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Confirm Logout"
+        message="Are you sure you want to sign out of PayVault?"
+        confirmLabel="Sign Out"
+        danger
+      />
     </div>
   )
 }

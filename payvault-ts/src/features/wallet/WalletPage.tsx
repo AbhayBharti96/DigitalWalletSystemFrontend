@@ -9,7 +9,7 @@ import { walletService, rewardsService, userService } from '../../services'
 import { getApiErrorMessage } from '../../shared/apiErrors'
 import { Modal, ConfirmDialog, SuccessOverlay, Skeleton, EmptyState } from '../../shared/components/ui'
 import { ScratchCardModal } from '../../shared/components/ScratchCard'
-import { formatCurrency, formatDate, getTransferCounterparty, getTxIcon, isCreditForUser, generateKey, calcPoints } from '../../shared/utils'
+import { formatCurrency, formatDate, getTransferCounterparty, getTransactionAmountDisplay, getTxIcon, generateKey, calcPoints } from '../../shared/utils'
 import { StatusBadge } from '../../shared/components/ui'
 import type { RecipientSearchItem, RazorpayOptions, RazorpayPaymentFailure, TransferRequest } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
@@ -29,6 +29,7 @@ const RAZORPAY_METHODS = [
   { key: 'wallet', title: 'Wallet', description: 'Use supported wallets inside Razorpay.' },
   { key: 'netbanking', title: 'Netbanking', description: 'Choose your bank from Razorpay netbanking.' },
 ] as const
+const HIDDEN_BALANCE_TEXT = '••••••'
 
 let razorpayScriptPromise: Promise<void> | null = null
 
@@ -122,6 +123,7 @@ export default function WalletPage() {
   const [scratchAmount, setScratchAmount] = useState(0)
 
   const [topupAmount, setTopupAmount] = useState('')
+  const [showWalletBalance, setShowWalletBalance] = useState(false)
   const [transfer, setTransfer] = useState<{ receiverId: string; amount: string; description: string }>({
     receiverId: '',
     amount: '',
@@ -247,6 +249,42 @@ export default function WalletPage() {
       }
 
       const order = orderData.payload
+      const orderId = order.orderId ?? order.id
+      const closeTopupFlow = () => {
+        setModal(null)
+        setActionLoading(false)
+        dispatch(fetchBalance())
+        dispatch(fetchTransactions({ page: 0, size: 6 }))
+        navigate('/wallet', { replace: true })
+      }
+      const reportCancelledPayment = async (paymentId?: string) => {
+        try {
+          await walletService.cancelPayment(user.id, {
+            razorpayOrderId: orderId,
+            razorpayPaymentId: paymentId ?? '',
+            razorpaySignature: '',
+          })
+        } catch {
+          // Keep the user on the wallet page even if the cancel callback errors.
+        } finally {
+          closeTopupFlow()
+        }
+      }
+      const reportFailedPayment = async (failure?: RazorpayPaymentFailure) => {
+        const paymentId = failure?.error?.metadata?.payment_id || ''
+        const reason = failure?.error?.description?.trim() || 'Payment failed in Razorpay checkout'
+        try {
+          await walletService.markPaymentFailed(user.id, {
+            razorpayOrderId: orderId,
+            razorpayPaymentId: paymentId,
+            razorpaySignature: '',
+          }, reason)
+        } catch {
+          // Preserve the user flow even if the failure callback itself errors.
+        } finally {
+          closeTopupFlow()
+        }
+      }
       window.alert = (message?: string) => {
         const text = String(message || '').trim()
         if (!text) return
@@ -261,7 +299,7 @@ export default function WalletPage() {
         key: keyId,
         amount: order.amount,
         currency: order.currency || 'INR',
-        order_id: order.orderId ?? order.id,
+        order_id: orderId,
         name: 'PayVault',
         description,
         theme: { color: '#22c55e' },
@@ -270,10 +308,10 @@ export default function WalletPage() {
           email: user.email,
         },
         modal: {
-          ondismiss: () => {
+          ondismiss: async () => {
             restoreAlert()
             toast('Top-up cancelled', { icon: 'i' })
-            setActionLoading(false)
+            await reportCancelledPayment()
           },
         },
         handler: async (response) => {
@@ -322,11 +360,11 @@ export default function WalletPage() {
       }
 
       const rzp = new window.Razorpay(options)
-      const handlePaymentFailed = (response?: RazorpayPaymentFailure) => {
+      const handlePaymentFailed = async (response?: RazorpayPaymentFailure) => {
         restoreAlert()
         rzp.close()
         toast.error(getRazorpayFailureMessage(response))
-        setActionLoading(false)
+        await reportFailedPayment(response)
       }
       rzp.on('payment.failed', handlePaymentFailed)
       rzp.open()
@@ -352,7 +390,9 @@ export default function WalletPage() {
   const handleScratchRevealed = async (pts: number) => {
     try {
       await rewardsService.earnInternal(user!.id, scratchAmount)
-    } catch (_) {}
+    } catch (_) {
+      // Ignore reward sync failures after transfer scratch-card reveal.
+    }
     dispatch(fetchRewardSummary())
     notify('success', `+${pts} Points Added!`, `Reward points for your transfer of ${formatCurrency(scratchAmount)}`)
     toast.success(`${pts} reward points added to your account!`)
@@ -418,6 +458,9 @@ export default function WalletPage() {
   }
 
   const txList = transactions?.content ?? []
+  const walletStatusLine = balance?.lastUpdated
+    ? `${balance?.status ?? 'ACTIVE'} · Last updated ${formatDate(balance.lastUpdated, 'hh:mm A')}`
+    : (balance?.status ?? 'ACTIVE')
 
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-4xl mx-auto">
@@ -448,17 +491,28 @@ export default function WalletPage() {
           style={{ background: 'radial-gradient(circle,#22c55e,transparent)', transform: 'translate(30%,-30%)' }}
         />
         <div className="relative z-10">
-          <div className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#86efac' }}>Available Balance</div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: '#86efac' }}>Available Balance</div>
+            {!loading && (
+              <button
+                type="button"
+                onClick={() => setShowWalletBalance(prev => !prev)}
+                className="inline-flex items-center justify-center rounded-md p-1"
+                style={{ color: '#86efac' }}
+                aria-label={showWalletBalance ? 'Hide wallet balance' : 'Show wallet balance'}
+              >
+                <Icon8 name={showWalletBalance ? 'eyeOff' : 'eye'} size={16} className="opacity-90" />
+              </button>
+            )}
+          </div>
           {loading
             ? <div className="skeleton h-10 w-44 rounded-lg mb-2" />
             : (
               <motion.div className="text-4xl font-display font-black text-white mb-1" initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
-                {formatCurrency(balance?.balance ?? 0)}
+                {showWalletBalance ? formatCurrency(balance?.balance ?? 0) : HIDDEN_BALANCE_TEXT}
               </motion.div>
             )}
-          <div className="text-xs mb-5" style={{ color: '#4ade80' }}>
-            {balance?.status ?? 'ACTIVE'} · Last updated {formatDate(balance?.lastUpdated, 'hh:mm A')}
-          </div>
+          <div className="text-xs mb-5" style={{ color: '#4ade80' }}>{walletStatusLine}</div>
 
           <div className="flex flex-wrap gap-2" role="group" aria-label="Wallet actions">
             {[
@@ -517,7 +571,7 @@ export default function WalletPage() {
               <div className="space-y-1">
                 {txList.map((tx, i) => {
                   const TxIcon = getTxIcon(tx.type)
-                  const credit = isCreditForUser(tx, user?.id)
+                  const amountDisplay = getTransactionAmountDisplay(tx, user?.id)
                   const counterparty = getTransferCounterparty(tx, user?.id)
                   const descriptor = counterparty
                     ? `${counterparty}${tx.description && tx.description !== 'Transfer' ? ` - ${tx.description}` : ''}`
@@ -534,7 +588,10 @@ export default function WalletPage() {
                     >
                       <div
                         className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
-                        style={{ background: credit ? '#dcfce7' : '#fee2e2', color: credit ? '#15803d' : '#b91c1c' }}
+                        style={{
+                          background: amountDisplay.tone === 'credit' ? '#dcfce7' : amountDisplay.tone === 'debit' ? '#fee2e2' : 'var(--bg-card)',
+                          color: amountDisplay.tone === 'credit' ? '#15803d' : amountDisplay.tone === 'debit' ? '#b91c1c' : 'var(--text-muted)',
+                        }}
                       >
                         <TxIcon fontSize="inherit" />
                       </div>
@@ -548,9 +605,24 @@ export default function WalletPage() {
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <div className="text-sm font-bold" style={{ color: credit ? 'var(--success)' : 'var(--danger)' }}>
-                          {credit ? '+' : '-'}{formatCurrency(tx.amount)}
+                        <div
+                          className="text-sm font-bold"
+                          style={{
+                            color: amountDisplay.tone === 'credit'
+                              ? 'var(--success)'
+                              : amountDisplay.tone === 'debit'
+                                ? 'var(--danger)'
+                                : 'var(--text-muted)',
+                          }}
+                          title={amountDisplay.tooltip}
+                        >
+                          {amountDisplay.value}
                         </div>
+                        {amountDisplay.tooltip && (
+                          <div className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                            {amountDisplay.tooltip}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )
