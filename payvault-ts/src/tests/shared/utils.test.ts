@@ -3,6 +3,7 @@ import {
   calcPoints,
   clamp,
   formatCurrency,
+  generateKey,
   getKycInfo,
   getTierStyle,
   getTransferCounterparty,
@@ -82,5 +83,11 @@ describe('shared/utils', () => {
     expect(clamp(5, 1, 10)).toBe(5)
     expect(clamp(-1, 1, 10)).toBe(1)
     expect(clamp(22, 1, 10)).toBe(10)
+  })
+
+  it('generates a timestamp-prefixed key with a random token', () => {
+    const key = generateKey()
+
+    expect(key).toMatch(/^\d+-[a-z0-9]+$/)
   })
 })

@@ -1,11 +1,62 @@
 import { z } from 'zod'
 import type { RewardItemType, RewardTier } from '../types'
 
-export const NAME_PATTERN = /^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/
-export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-export const PASSWORD_COMPLEXITY_PATTERN = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/
 export const OTP_PATTERN = /^\d{4,8}$/
 export const PHONE_PATTERN = /^[0-9]{10}$/
+
+const allowedPasswordSymbols = new Set(['@', '$', '!', '%', '*', '?', '&'])
+
+export const isValidName = (value: string) => {
+  if (!value || value.length > 100) return false
+  let previousWasSeparator = true
+
+  for (const char of value) {
+    const isLetter = (char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z')
+    const isSeparator = char === ' ' || char === '\'' || char === '-'
+
+    if (isLetter) {
+      previousWasSeparator = false
+      continue
+    }
+    if (isSeparator && !previousWasSeparator) {
+      previousWasSeparator = true
+      continue
+    }
+    return false
+  }
+
+  return !previousWasSeparator
+}
+
+export const isValidEmail = (value: string) => {
+  if (!value || value.length > 254 || value.includes(' ')) return false
+
+  const atIndex = value.indexOf('@')
+  if (atIndex <= 0 || atIndex !== value.lastIndexOf('@')) return false
+
+  const local = value.slice(0, atIndex)
+  const domain = value.slice(atIndex + 1)
+  if (!local || !domain || domain.startsWith('.') || domain.endsWith('.')) return false
+
+  const lastDotIndex = domain.lastIndexOf('.')
+  return lastDotIndex > 0 && lastDotIndex < domain.length - 1
+}
+
+export const hasPasswordComplexity = (value: string) => {
+  let hasLower = false
+  let hasUpper = false
+  let hasDigit = false
+  let hasSymbol = false
+
+  for (const char of value) {
+    hasLower ||= char >= 'a' && char <= 'z'
+    hasUpper ||= char >= 'A' && char <= 'Z'
+    hasDigit ||= char >= '0' && char <= '9'
+    hasSymbol ||= allowedPasswordSymbols.has(char)
+  }
+
+  return hasLower && hasUpper && hasDigit && hasSymbol
+}
 
 export const normalizeWhitespace = (value: string) => value.trim().replace(/\s+/g, ' ')
 export const digitsOnly = (value: string) => value.replace(/\D/g, '')
@@ -14,7 +65,7 @@ const trimmedRequiredString = (message: string) =>
   z.string().transform(value => value.trim()).pipe(z.string().min(1, message))
 
 export const emailSchema = trimmedRequiredString('Email address is required')
-  .refine(value => EMAIL_PATTERN.test(value), 'Invalid email address')
+  .refine(isValidEmail, 'Invalid email address')
 
 export const loginPasswordSchema = trimmedRequiredString('Password is required')
 
@@ -27,7 +78,7 @@ export const fullNameSchema = z.string()
     z.string()
       .min(2, 'At least 2 characters required')
       .max(100, 'Full name must be 100 characters or fewer')
-      .regex(NAME_PATTERN, 'Name must contain letters only')
+      .refine(isValidName, 'Name must contain letters only')
   )
 
 export const phoneSchema = z.string()
@@ -40,7 +91,7 @@ export const optionalPhoneSchema = z.string()
 
 export const strongPasswordSchema = z.string()
   .min(8, 'Minimum 8 characters')
-  .regex(PASSWORD_COMPLEXITY_PATTERN, 'Must include A-Z, a-z, 0-9, and @$!%*?&')
+  .refine(hasPasswordComplexity, 'Must include A-Z, a-z, 0-9, and @$!%*?&')
 
 export const signupSchema = z.object({
   fullName: fullNameSchema,

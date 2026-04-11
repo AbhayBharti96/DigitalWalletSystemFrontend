@@ -74,6 +74,12 @@ const SCRATCH_THEMES: Record<RewardTier, ScratchTheme> = {
   },
 }
 
+const secureRandom = () => {
+  const values = new Uint32Array(1)
+  crypto.getRandomValues(values)
+  return values[0] / (0xffffffff + 1)
+}
+
 const ScratchCanvas: React.FC<{
   width: number
   height: number
@@ -102,22 +108,22 @@ const ScratchCanvas: React.FC<{
     ctx.fillRect(0, 0, width, height)
 
     for (let i = 0; i < 40; i++) {
-      const x = Math.random() * width
-      const y = Math.random() * height
-      const r = Math.random() * 28 + 10
+      const x = secureRandom() * width
+      const y = secureRandom() * height
+      const r = secureRandom() * 28 + 10
       ctx.beginPath()
       ctx.arc(x, y, r, 0, Math.PI * 2)
-      ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.1 + 0.08})`
+      ctx.fillStyle = `rgba(255,255,255,${secureRandom() * 0.1 + 0.08})`
       ctx.fill()
     }
 
     for (let i = 0; i < 20; i++) {
-      const x = Math.random() * width
-      const y = Math.random() * height
-      const r = Math.random() * 2 + 1
+      const x = secureRandom() * width
+      const y = secureRandom() * height
+      const r = secureRandom() * 2 + 1
       ctx.beginPath()
       ctx.arc(x, y, r, 0, Math.PI * 2)
-      ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.45 + 0.25})`
+      ctx.fillStyle = `rgba(255,255,255,${secureRandom() * 0.45 + 0.25})`
       ctx.fill()
     }
 
