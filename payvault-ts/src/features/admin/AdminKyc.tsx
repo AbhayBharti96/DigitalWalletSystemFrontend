@@ -126,7 +126,7 @@ export function AdminKyc() {
               aria-label="KYC Review"
             >
               <motion.div
-                className="card w-full max-w-3xl max-h-[90vh] overflow-hidden"
+                className="card w-full max-w-5xl max-h-[90vh] overflow-hidden"
                 initial={{ scale: 0.85, y: 30 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.85, y: 30 }}
@@ -137,58 +137,60 @@ export function AdminKyc() {
                 </div>
 
                 <div className="max-h-[calc(90vh-84px)] overflow-y-auto p-5 space-y-5">
-                  <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-                    <div>
-                    <div className="text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                      Submitted Document
-                    </div>
-                    {selectedDocUrl ? (
-                      <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border)', background: 'var(--bg-primary)' }}>
-                        {!docPreviewError && isImage && (
-                          <img
-                            src={selectedDocUrl}
-                            alt="Submitted KYC document"
-                            className="w-full max-h-64 object-contain"
-                            onError={() => setDocPreviewError(true)}
-                          />
-                        )}
-                        {!docPreviewError && isPdf && (
-                          <iframe
-                            src={selectedDocUrl}
-                            title="Submitted KYC PDF"
-                            className="w-full h-64"
-                            onError={() => setDocPreviewError(true)}
-                          />
-                        )}
-                        {(docPreviewError || (!isImage && !isPdf)) && (
-                          <div className="p-4 text-sm" style={{ color: 'var(--text-muted)' }}>
-                            Preview unavailable for this file type.
+                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.8fr)]">
+                    <div className="min-w-0 space-y-2">
+                      <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                        Submitted Document
+                      </div>
+                      {selectedDocUrl ? (
+                        <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border)', background: 'var(--bg-primary)' }}>
+                          {!docPreviewError && isImage && (
+                            <div className="flex items-center justify-center bg-slate-50/40">
+                              <img
+                                src={selectedDocUrl}
+                                alt="Submitted KYC document"
+                                className="w-full max-h-[440px] object-contain"
+                                onError={() => setDocPreviewError(true)}
+                              />
+                            </div>
+                          )}
+                          {!docPreviewError && isPdf && (
+                            <iframe
+                              src={selectedDocUrl}
+                              title="Submitted KYC PDF"
+                              className="w-full h-[440px]"
+                              onError={() => setDocPreviewError(true)}
+                            />
+                          )}
+                          {(docPreviewError || (!isImage && !isPdf)) && (
+                            <div className="p-4 text-sm" style={{ color: 'var(--text-muted)' }}>
+                              Preview unavailable for this file type.
+                            </div>
+                          )}
+                          <div className="px-3 py-2 border-t flex flex-wrap items-center justify-between gap-2" style={{ borderColor: 'var(--border)' }}>
+                            <span className="text-xs break-all" style={{ color: 'var(--text-muted)' }}>
+                              {selected.docFilePath || '-'}
+                            </span>
+                            <a
+                              href={selectedDocUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs font-semibold px-2 py-1 rounded-md whitespace-nowrap"
+                              style={{ background: 'var(--bg-card)', color: 'var(--brand)', border: '1px solid var(--border)' }}
+                            >
+                              Open
+                            </a>
                           </div>
-                        )}
-                        <div className="px-3 py-2 border-t flex items-center justify-between gap-2" style={{ borderColor: 'var(--border)' }}>
-                          <span className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
-                            {selected.docFilePath || '-'}
-                          </span>
-                          <a
-                            href={selectedDocUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs font-semibold px-2 py-1 rounded-md"
-                            style={{ background: 'var(--bg-card)', color: 'var(--brand)', border: '1px solid var(--border)' }}
-                          >
-                            Open
-                          </a>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border p-3 text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)', background: 'var(--bg-primary)' }}>
-                        No document path provided by API.
-                      </div>
-                    )}
+                      ) : (
+                        <div className="rounded-xl border p-3 text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)', background: 'var(--bg-primary)' }}>
+                          No document path provided by API.
+                        </div>
+                      )}
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="min-w-0 space-y-4">
+                      <div className="grid gap-3 text-sm sm:grid-cols-2">
                         {[
                           ['Name', selected.userName],
                           ['Email', selected.userEmail],
@@ -199,7 +201,7 @@ export function AdminKyc() {
                           <div key={k as string}>
                             <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{k}</div>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <div className="font-medium break-words" style={{ color: 'var(--text-primary)' }}>{v || '-'}</div>
+                              <div className="font-medium break-all" style={{ color: 'var(--text-primary)' }}>{v || '-'}</div>
                               {k === 'Doc Number' && (
                                 <button
                                   type="button"
@@ -224,7 +226,7 @@ export function AdminKyc() {
                           id="reject-reason"
                           value={reason}
                           onChange={e => setReason(e.target.value)}
-                          className="input-field resize-none"
+                          className="input-field w-full resize-none"
                           rows={5}
                           placeholder="Tell the user why this KYC was rejected. This note should also be sent by the backend email flow."
                         />
@@ -233,7 +235,7 @@ export function AdminKyc() {
                         </p>
                       </div>
 
-                      <div className="flex gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row">
                         <button onClick={() => handle(false)} disabled={actioning} className="flex-1 btn-danger py-2.5 text-sm inline-flex items-center justify-center gap-1">
                           <Icon8 name="error" size={14} /> {actioning && activeAction === 'reject' ? 'Rejecting...' : 'Reject with Note'}
                         </button>
