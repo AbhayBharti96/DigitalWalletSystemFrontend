@@ -21,7 +21,6 @@ describe('kycService', () => {
     expect(config).toEqual({
       headers: {
         'X-User-Id': 10,
-        'Content-Type': 'multipart/form-data',
       },
     })
   })

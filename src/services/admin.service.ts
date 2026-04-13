@@ -4,47 +4,47 @@ import { getApiErrorMessage } from '../shared/apiErrors'
 
 export const adminService = {
   dashboard: (role: string) =>
-    apiClient.get<ApiResponse<AdminDashboard>>('/api/admin/dashboard', { headers: { 'X-UserRole': role } }),
+    apiClient.get<ApiResponse<AdminDashboard>>('/api/admin/dashboard', { headers: { 'X-User-Role': role } }),
   listUsers: (role: string, params?: Record<string, unknown>) =>
     apiClient.get<ApiResponse<PageResponse<AdminUserResponse>>>('/api/admin/users', {
-      headers: { 'X-UserRole': role },
+      headers: { 'X-User-Role': role },
       params,
     }),
   getUser: (userId: number, role: string) =>
-    apiClient.get<ApiResponse<AdminUserResponse>>(`/api/admin/users/${userId}`, { headers: { 'X-UserRole': role } }),
+    apiClient.get<ApiResponse<AdminUserResponse>>(`/api/admin/users/${userId}`, { headers: { 'X-User-Role': role } }),
   blockUser: (userId: number, role: string) =>
-    apiClient.patch<ApiResponse<AdminUserResponse>>(`/api/admin/users/${userId}/block`, {}, { headers: { 'X-UserRole': role } }),
+    apiClient.patch<ApiResponse<AdminUserResponse>>(`/api/admin/users/${userId}/block`, {}, { headers: { 'X-User-Role': role } }),
   unblockUser: (userId: number, role: string) =>
-    apiClient.patch<ApiResponse<AdminUserResponse>>(`/api/admin/users/${userId}/unblock`, {}, { headers: { 'X-UserRole': role } }),
+    apiClient.patch<ApiResponse<AdminUserResponse>>(`/api/admin/users/${userId}/unblock`, {}, { headers: { 'X-User-Role': role } }),
   changeRole: (userId: number, newRole: string, role: string) =>
-    apiClient.patch(`/api/admin/users/${userId}/role?newRole=${newRole}`, {}, { headers: { 'X-UserRole': role } }),
+    apiClient.patch(`/api/admin/users/${userId}/role?newRole=${newRole}`, {}, { headers: { 'X-User-Role': role } }),
   searchUsers: (query: string, role: string, page = 0) =>
     apiClient.get<ApiResponse<PageResponse<AdminUserResponse>>>(`/api/admin/users/search?q=${encodeURIComponent(query)}&page=${page}`, {
-      headers: { 'X-UserRole': role },
+      headers: { 'X-User-Role': role },
     }),
   pendingKyc: (role: string, page = 0) =>
     apiClient.get<ApiResponse<PageResponse<KycStatusResponse>>>(`/api/admin/kyc/pending?page=${page}`, {
-      headers: { 'X-UserRole': role },
+      headers: { 'X-User-Role': role },
     }),
   approveKyc: (kycId: number, role: string, email: string) =>
-    apiClient.post(`/api/admin/kyc/${kycId}/approve`, {}, { headers: { 'X-UserRole': role, 'X-UserEmail': email } }),
+    apiClient.post(`/api/admin/kyc/${kycId}/approve`, {}, { headers: { 'X-User-Role': role, 'X-User-Email': email } }),
   rejectKyc: (kycId: number, reason: string, role: string, email: string) =>
     apiClient.post(`/api/admin/kyc/${kycId}/reject?reason=${encodeURIComponent(reason)}`, {}, {
-      headers: { 'X-UserRole': role, 'X-UserEmail': email },
+      headers: { 'X-User-Role': role, 'X-User-Email': email },
     }),
   addCatalogItem: (payload: AdminCatalogItemPayload, role: string) =>
-    apiClient.post<ApiResponse<RewardItem>>('/api/rewards/admin/catalog/add', payload, { headers: { 'X-UserRole': role } }),
+    apiClient.post<ApiResponse<RewardItem>>('/api/rewards/admin/catalog/add', payload, { headers: { 'X-User-Role': role } }),
   updateCatalogItem: async (catalogId: number, payload: AdminCatalogItemPayload, role: string) => {
     try {
-      return await apiClient.put<ApiResponse<RewardItem>>(`/api/rewards/admin/catalog/${catalogId}`, payload, { headers: { 'X-UserRole': role } })
+      return await apiClient.put<ApiResponse<RewardItem>>(`/api/rewards/admin/catalog/${catalogId}`, payload, { headers: { 'X-User-Role': role } })
     } catch (error) {
       const message = getApiErrorMessage(error, 'Could not update catalog item').toLowerCase()
       if (message.includes('405') || message.includes('method not allowed') || message.includes('not supported')) {
-        return apiClient.patch<ApiResponse<RewardItem>>(`/api/rewards/admin/catalog/${catalogId}`, payload, { headers: { 'X-UserRole': role } })
+        return apiClient.patch<ApiResponse<RewardItem>>(`/api/rewards/admin/catalog/${catalogId}`, payload, { headers: { 'X-User-Role': role } })
       }
       throw error
     }
   },
   deleteCatalogItem: (catalogId: number, role: string) =>
-    apiClient.delete<ApiResponse<void>>(`/api/rewards/admin/catalog/${catalogId}`, { headers: { 'X-UserRole': role } }),
+    apiClient.delete<ApiResponse<void>>(`/api/rewards/admin/catalog/${catalogId}`, { headers: { 'X-User-Role': role } }),
 }

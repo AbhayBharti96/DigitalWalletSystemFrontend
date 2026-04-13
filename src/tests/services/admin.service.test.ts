@@ -17,16 +17,16 @@ describe('adminService', () => {
     adminService.changeRole(22, 'MERCHANT', 'ADMIN')
     adminService.searchUsers('alice', 'ADMIN', 3)
 
-    expect(apiClientMock.get).toHaveBeenNthCalledWith(1, '/api/admin/dashboard', { headers: { 'X-UserRole': 'ADMIN' } })
+    expect(apiClientMock.get).toHaveBeenNthCalledWith(1, '/api/admin/dashboard', { headers: { 'X-User-Role': 'ADMIN' } })
     expect(apiClientMock.get).toHaveBeenNthCalledWith(2, '/api/admin/users', {
-      headers: { 'X-UserRole': 'ADMIN' },
+      headers: { 'X-User-Role': 'ADMIN' },
       params: { page: 1, size: 15 },
     })
-    expect(apiClientMock.get).toHaveBeenNthCalledWith(3, '/api/admin/users/22', { headers: { 'X-UserRole': 'ADMIN' } })
-    expect(apiClientMock.patch).toHaveBeenNthCalledWith(1, '/api/admin/users/22/block', {}, { headers: { 'X-UserRole': 'ADMIN' } })
-    expect(apiClientMock.patch).toHaveBeenNthCalledWith(2, '/api/admin/users/22/unblock', {}, { headers: { 'X-UserRole': 'ADMIN' } })
-    expect(apiClientMock.patch).toHaveBeenNthCalledWith(3, '/api/admin/users/22/role?newRole=MERCHANT', {}, { headers: { 'X-UserRole': 'ADMIN' } })
-    expect(apiClientMock.get).toHaveBeenNthCalledWith(4, '/api/admin/users/search?q=alice&page=3', { headers: { 'X-UserRole': 'ADMIN' } })
+    expect(apiClientMock.get).toHaveBeenNthCalledWith(3, '/api/admin/users/22', { headers: { 'X-User-Role': 'ADMIN' } })
+    expect(apiClientMock.patch).toHaveBeenNthCalledWith(1, '/api/admin/users/22/block', {}, { headers: { 'X-User-Role': 'ADMIN' } })
+    expect(apiClientMock.patch).toHaveBeenNthCalledWith(2, '/api/admin/users/22/unblock', {}, { headers: { 'X-User-Role': 'ADMIN' } })
+    expect(apiClientMock.patch).toHaveBeenNthCalledWith(3, '/api/admin/users/22/role?newRole=MERCHANT', {}, { headers: { 'X-User-Role': 'ADMIN' } })
+    expect(apiClientMock.get).toHaveBeenNthCalledWith(4, '/api/admin/users/search?q=alice&page=3', { headers: { 'X-User-Role': 'ADMIN' } })
   })
 
   it('calls kyc moderation endpoints with role and email headers', () => {
@@ -34,12 +34,12 @@ describe('adminService', () => {
     adminService.approveKyc(12, 'ADMIN', 'admin@example.com')
     adminService.rejectKyc(12, 'Missing document', 'ADMIN', 'admin@example.com')
 
-    expect(apiClientMock.get).toHaveBeenCalledWith('/api/admin/kyc/pending?page=2', { headers: { 'X-UserRole': 'ADMIN' } })
+    expect(apiClientMock.get).toHaveBeenCalledWith('/api/admin/kyc/pending?page=2', { headers: { 'X-User-Role': 'ADMIN' } })
     expect(apiClientMock.post).toHaveBeenNthCalledWith(1, '/api/admin/kyc/12/approve', {}, {
-      headers: { 'X-UserRole': 'ADMIN', 'X-UserEmail': 'admin@example.com' },
+      headers: { 'X-User-Role': 'ADMIN', 'X-User-Email': 'admin@example.com' },
     })
     expect(apiClientMock.post).toHaveBeenNthCalledWith(2, '/api/admin/kyc/12/reject?reason=Missing%20document', {}, {
-      headers: { 'X-UserRole': 'ADMIN', 'X-UserEmail': 'admin@example.com' },
+      headers: { 'X-User-Role': 'ADMIN', 'X-User-Email': 'admin@example.com' },
     })
   })
 
@@ -57,21 +57,21 @@ describe('adminService', () => {
       type: 'COUPON',
       stock: 5,
       active: true,
-    }, { headers: { 'X-UserRole': 'ADMIN' } })
+    }, { headers: { 'X-User-Role': 'ADMIN' } })
     expect(apiClientMock.put).toHaveBeenCalledWith('/api/rewards/admin/catalog/9', {
       name: 'Item',
       pointsRequired: 100,
       type: 'COUPON',
       stock: 5,
       active: true,
-    }, { headers: { 'X-UserRole': 'ADMIN' } })
+    }, { headers: { 'X-User-Role': 'ADMIN' } })
     expect(apiClientMock.patch).toHaveBeenCalledWith('/api/rewards/admin/catalog/9', {
       name: 'Item',
       pointsRequired: 100,
       type: 'COUPON',
       stock: 5,
       active: true,
-    }, { headers: { 'X-UserRole': 'ADMIN' } })
-    expect(apiClientMock.delete).toHaveBeenCalledWith('/api/rewards/admin/catalog/9', { headers: { 'X-UserRole': 'ADMIN' } })
+    }, { headers: { 'X-User-Role': 'ADMIN' } })
+    expect(apiClientMock.delete).toHaveBeenCalledWith('/api/rewards/admin/catalog/9', { headers: { 'X-User-Role': 'ADMIN' } })
   })
 })

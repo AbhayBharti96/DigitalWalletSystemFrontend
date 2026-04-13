@@ -8,7 +8,7 @@ export const kycService = {
     return apiClient.post<ApiResponse<KycStatusResponse>>(
       `/api/kyc/submit?docType=${docType}&docNumber=${encodeURIComponent(docNumber)}`,
       formData,
-      { headers: { 'X-User-Id': userId, 'Content-Type': 'multipart/form-data' } }
+      { headers: { 'X-User-Id': userId } }
     )
   },
   status: (userId: number) =>

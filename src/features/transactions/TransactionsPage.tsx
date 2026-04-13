@@ -214,10 +214,44 @@ export function TransactionsPage() {
         <p className="text-sm mt-0.5" style={{ color: softSecondary }}>Full history of your wallet activity</p></div>
 
       <motion.div className="card p-4 flex flex-wrap gap-3 items-end" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <div><label htmlFor="from-date" className="block text-xs font-semibold mb-1" style={{ color: softMuted }}>From</label>
-          <input id="from-date" type="date" value={from} onChange={e => setFrom(e.target.value)} className="input-field py-2 text-sm" /></div>
-        <div><label htmlFor="to-date" className="block text-xs font-semibold mb-1" style={{ color: softMuted }}>To</label>
-          <input id="to-date" type="date" value={to} onChange={e => setTo(e.target.value)} className="input-field py-2 text-sm" /></div>
+        <div>
+          <label htmlFor="from-date" className="block text-xs font-semibold mb-1" style={{ color: softMuted }}>From</label>
+          <div className="relative">
+            <input
+              id="from-date"
+              type="date"
+              value={from}
+              onChange={e => setFrom(e.target.value)}
+              className="input-field date-input-with-icon py-2 pr-11 text-sm"
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-3 flex items-center"
+              style={{ color: softSecondary }}
+            >
+              <Icon8 name="calendar" size={16} />
+            </span>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="to-date" className="block text-xs font-semibold mb-1" style={{ color: softMuted }}>To</label>
+          <div className="relative">
+            <input
+              id="to-date"
+              type="date"
+              value={to}
+              onChange={e => setTo(e.target.value)}
+              className="input-field date-input-with-icon py-2 pr-11 text-sm"
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-3 flex items-center"
+              style={{ color: softSecondary }}
+            >
+              <Icon8 name="calendar" size={16} />
+            </span>
+          </div>
+        </div>
         <div className="sm:ml-auto flex items-end gap-2">
           <div>
             <label htmlFor="export-format" className="block text-xs font-semibold mb-1" style={{ color: softMuted }}>Export</label>

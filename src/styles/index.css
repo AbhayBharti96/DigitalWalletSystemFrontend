@@ -133,6 +133,28 @@ body {
 .input-field::placeholder { color: var(--text-muted); }
 .input-field:disabled { opacity: 0.5; cursor: not-allowed; }
 
+input[type="date"].input-field {
+  color-scheme: light;
+}
+input[type="date"].input-field::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.8;
+}
+.date-input-with-icon::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  width: 0;
+}
+.dark input[type="date"].input-field {
+  color-scheme: dark;
+}
+.dark input[type="date"].input-field::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+  opacity: 0.9;
+}
+.dark .date-input-with-icon::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
 /* Hide native browser password reveal controls when we render our own eye toggle */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
