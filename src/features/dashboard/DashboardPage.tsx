@@ -1,29 +1,16 @@
-import { useEffect, Suspense, lazy, useState } from 'react'
+import { useEffect, Suspense, lazy } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import dayjs from 'dayjs'
 import { useAppDispatch, useAppSelector, useTheme } from '../../shared/hooks'
 import { fetchBalance, fetchTransactions } from '../../store/walletSlice'
 import { fetchRewardSummary } from '../../store/rewardsSlice'
-import { formatCurrency, getKycInfo, getTierStyle, getTierIcon, isCreditForUser } from '../../shared/utils'
+import { buildWeeklySpendingSeries, formatCurrency, getKycInfo, getTierStyle, getTierIcon } from '../../shared/utils'
 import { Skeleton } from '../../shared/components/ui'
 import { Icon8 } from '../../shared/components/Icon8'
 
 const SpendingOverviewChart = lazy(() => import('./SpendingOverviewChart'))
 
-const dashboardCardValue = (enabled: boolean, loading: boolean, visibleValue: string, lockedValue = '--') => {
-  if (!enabled) return lockedValue
-  return loading ? '...' : visibleValue
-}
-
-const nextTierSubText = (enabled: boolean, nextTier: string | undefined, points: number, targetForNextTier: number) => {
-  if (!enabled) return 'Locked until KYC approval'
-  if (!nextTier) return 'Max tier unlocked'
-  return `${points.toLocaleString()} / ${targetForNextTier.toLocaleString()} pts to ${nextTier}`
-}
-
 const lightCardShadow = '0 12px 28px -18px rgba(15,23,42,0.32), 0 3px 8px -3px rgba(15,23,42,0.12)'
-const HIDDEN_BALANCE_TEXT = '••••••'
 
 const StatCard: React.FC<{
   icon: React.ReactNode
@@ -69,22 +56,18 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const { isDark } = useTheme()
   const { user } = useAppSelector(s => s.auth)
-  const { balance, transactions, loading: wLoad } = useAppSelector(s => s.wallet)
+  const { balance, transactions, loading: wLoad, txLoading } = useAppSelector(s => s.wallet)
   const { summary, loading: rLoad } = useAppSelector(s => s.rewards)
-  const [showDashboardBalance, setShowDashboardBalance] = useState(false)
 
   useEffect(() => {
     if (!user?.id) return
-    if (user.kycStatus !== 'APPROVED') return
     dispatch(fetchBalance())
-    dispatch(fetchTransactions({ page: 0, size: 200 }))
+    dispatch(fetchTransactions({ page: 0, size: 100 }))
     dispatch(fetchRewardSummary())
-  }, [dispatch, user?.id, user?.kycStatus])
+  }, [dispatch, user?.id])
 
-  const isAdmin = user?.role === 'ADMIN'
   const kycI = getKycInfo(user?.kycStatus)
   const KycIcon = kycI.icon
-  const canAccessFinancialFeatures = user?.kycStatus === 'APPROVED' || isAdmin
   const tierS = getTierStyle(summary?.tier)
   const TierIcon = getTierIcon(summary?.tier)
   const currentTier = (summary?.tier ?? 'SILVER').toUpperCase()
@@ -94,52 +77,16 @@ export default function DashboardPage() {
   const targetForNextTier = points + pointsToNextTier
   const tierProgressPct = targetForNextTier > 0 ? Math.round((points / targetForNextTier) * 100) : 100
   const nextTierStyle = getTierStyle(summary?.nextTier)
-  const showKycBanner = !isAdmin && user?.kycStatus === 'NOT_SUBMITTED'
-  const currentMonth = dayjs()
-  const currentMonthLabel = currentMonth.format('MMMM YYYY')
-  const currentMonthTransactions = canAccessFinancialFeatures
-    ? (transactions?.content ?? []).filter(tx => tx.status === 'SUCCESS' && dayjs(tx.createdAt).isSame(currentMonth, 'month'))
-    : []
-  const monthlySpend = currentMonthTransactions.reduce((sum, tx) => (
-    isCreditForUser(tx, user?.id) ? sum : sum + tx.amount
-  ), 0)
-  const monthlyCredits = currentMonthTransactions.reduce((sum, tx) => (
-    isCreditForUser(tx, user?.id) ? sum + tx.amount : sum
-  ), 0)
-  const spendingOverviewData = Array.from({ length: 7 }, (_, index) => {
-    const day = dayjs().subtract(6 - index, 'day')
-    const total = canAccessFinancialFeatures
-      ? (transactions?.content ?? []).reduce((sum, tx) => {
-        if (tx.status !== 'SUCCESS') return sum
-        if (isCreditForUser(tx, user?.id)) return sum
-        if (!dayjs(tx.createdAt).isSame(day, 'day')) return sum
-        return sum + tx.amount
-      }, 0)
-      : 0
-
-    return {
-      d: day.format('ddd'),
-      v: total,
-    }
-  })
+  const showKycBanner = user?.kycStatus === 'NOT_SUBMITTED'
 
   const tierProgressScale = (() => {
     const denom = targetForNextTier
     const raw = denom > 0 ? points / denom : 1
     return Math.max(0, Math.min(1, raw))
   })()
-  const walletBalanceValue = dashboardCardValue(
-    canAccessFinancialFeatures,
-    wLoad,
-    showDashboardBalance ? formatCurrency(balance?.balance ?? 0) : HIDDEN_BALANCE_TEXT,
-  )
-  const rewardPointsValue = dashboardCardValue(canAccessFinancialFeatures, rLoad, points.toLocaleString())
-  const nextTierProgressValue = dashboardCardValue(
-    canAccessFinancialFeatures,
-    rLoad,
-    nextTier ? `${tierProgressPct}%` : '100%',
-  )
-  const nextTierProgressSub = nextTierSubText(canAccessFinancialFeatures, nextTier, points, targetForNextTier)
+  const weeklySpend = buildWeeklySpendingSeries(transactions?.content ?? [], user?.id)
+  const weeklyCreditTotal = weeklySpend.reduce((sum, point) => sum + point.credit, 0)
+  const weeklyDebitTotal = weeklySpend.reduce((sum, point) => sum + point.debit, 0)
 
   return (
     <div className="p-3 lg:p-5 space-y-4 max-w-[1080px] mx-auto">
@@ -163,45 +110,45 @@ export default function DashboardPage() {
               </p>
             <div className="mt-4 flex flex-wrap gap-2.5">
               <button
-                onClick={() => navigate(canAccessFinancialFeatures ? '/wallet' : '/kyc')}
+                onClick={() => navigate('/wallet')}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black transition-all hover:brightness-95"
                 style={{ background: '#23c363', color: 'white', boxShadow: '0 12px 24px rgba(35,195,99,0.3)' }}
               >
-                {canAccessFinancialFeatures ? 'Go to wallet' : 'Complete KYC'}
+                Go to wallet
                 <span aria-hidden="true">-&gt;</span>
               </button>
               <button
-                onClick={() => navigate(canAccessFinancialFeatures ? '/rewards' : '/kyc')}
+                onClick={() => navigate('/rewards')}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-85"
                 style={{ background: '#f5f7f8', color: '#172338', border: '1px solid #d9e2e8' }}
               >
                 <Icon8 name="rewards" size={18} />
-                {canAccessFinancialFeatures ? 'View rewards' : 'Verify KYC'}
+                View rewards
               </button>
             </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="rounded-3xl p-4" style={{ background: '#f4f6f8', border: '1px solid #d5dee6', boxShadow: isDark ? 'none' : lightCardShadow }}>
-              <div className="text-sm font-medium" style={{ color: '#9ea8ba' }}>Monthly Spend</div>
-              <div className="text-4xl leading-none font-black mt-2" style={{ color: '#0e1f3f' }}>{canAccessFinancialFeatures ? formatCurrency(monthlySpend) : '--'}</div>
-              <div
-                className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
-                style={{ background: '#fee2e2', color: '#b91c1c' }}
-              >
-                <span aria-hidden="true">&#8595;</span>
-                {currentMonthLabel}
-              </div>
-            </div>
-            <div className="rounded-3xl p-4" style={{ background: '#f4f6f8', border: '1px solid #d5dee6', boxShadow: isDark ? 'none' : lightCardShadow }}>
-              <div className="text-sm font-medium" style={{ color: '#9ea8ba' }}>Monthly Credits</div>
-              <div className="text-4xl leading-none font-black mt-2" style={{ color: '#0e1f3f' }}>{canAccessFinancialFeatures ? formatCurrency(monthlyCredits) : '--'}</div>
+              <div className="text-sm font-medium" style={{ color: '#9ea8ba' }}>Available Balance</div>
+              <div className="text-4xl leading-none font-black mt-2" style={{ color: '#0e1f3f' }}>{wLoad ? '...' : formatCurrency(balance?.balance ?? 0)}</div>
               <div
                 className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
                 style={{ background: '#ddf3e5', color: '#2aa260' }}
               >
                 <span aria-hidden="true">&#8599;</span>
-                {currentMonthLabel}
+                Active wallet state
+              </div>
+            </div>
+            <div className="rounded-3xl p-4" style={{ background: '#f4f6f8', border: '1px solid #d5dee6', boxShadow: isDark ? 'none' : lightCardShadow }}>
+              <div className="text-sm font-medium" style={{ color: '#9ea8ba' }}>Reward Points</div>
+              <div className="text-4xl leading-none font-black mt-2" style={{ color: '#0e1f3f' }}>{rLoad ? '...' : points.toLocaleString()}</div>
+              <div
+                className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
+                style={{ background: tierS.bg, color: tierS.text, border: `1px solid ${tierS.border}` }}
+              >
+                <TierIcon fontSize="inherit" />
+                {currentTier} tier
               </div>
             </div>
           </div>
@@ -229,33 +176,7 @@ export default function DashboardPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <StatCard
-          icon={<Icon8 name="wallet" size={24} />}
-          label="Wallet Balance"
-          delay={0}
-          isDark={isDark}
-          value={walletBalanceValue}
-          sub={canAccessFinancialFeatures ? (
-            <span className="inline-flex items-center gap-2">
-              <span>Status: {balance?.status ?? 'INACTIVE'}</span>
-              {!wLoad && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowDashboardBalance(prev => !prev)
-                  }}
-                  className="inline-flex items-center justify-center rounded-md p-1"
-                  style={{ color: '#9ca6b6' }}
-                  aria-label={showDashboardBalance ? 'Hide wallet balance' : 'Show wallet balance'}
-                >
-                  <Icon8 name={showDashboardBalance ? 'eyeOff' : 'eye'} size={16} className="opacity-80" />
-                </button>
-              )}
-            </span>
-          ) : 'Complete KYC to unlock wallet'}
-          onClick={() => navigate(canAccessFinancialFeatures ? '/wallet' : '/kyc')}
-        />
+        <StatCard icon={<Icon8 name="wallet" size={24} />} label="Wallet Balance" delay={0} isDark={isDark} value={wLoad ? '...' : formatCurrency(balance?.balance ?? 0)} sub={`Status: ${balance?.status ?? 'INACTIVE'}`} onClick={() => navigate('/wallet')} />
         <StatCard
           icon={<Icon8 name="rewards" size={24} />}
           label="Reward Points"
@@ -263,11 +184,9 @@ export default function DashboardPage() {
           iconColor={tierS.text}
           delay={0.05}
           isDark={isDark}
-          value={rewardPointsValue}
-          sub={canAccessFinancialFeatures
-            ? <span className="inline-flex items-center gap-1" style={{ color: tierS.text }}><TierIcon fontSize="inherit" /> {currentTier}</span>
-            : 'Complete KYC to unlock rewards'}
-          onClick={() => navigate(canAccessFinancialFeatures ? '/rewards' : '/kyc')}
+          value={rLoad ? '...' : points.toLocaleString()}
+          sub={<span className="inline-flex items-center gap-1" style={{ color: tierS.text }}><TierIcon fontSize="inherit" /> {currentTier}</span>}
+          onClick={() => navigate('/rewards')}
         />
         <StatCard
           icon={<Icon8 name="target" size={24} />}
@@ -276,9 +195,9 @@ export default function DashboardPage() {
           iconColor={nextTier ? nextTierStyle.text : '#6366f1'}
           delay={0.1}
           isDark={isDark}
-          value={nextTierProgressValue}
-          sub={nextTierProgressSub}
-          onClick={() => navigate(canAccessFinancialFeatures ? '/rewards' : '/kyc')}
+          value={rLoad ? '...' : (nextTier ? `${tierProgressPct}%` : '100%')}
+          sub={nextTier ? `${points.toLocaleString()} / ${targetForNextTier.toLocaleString()} pts to ${nextTier}` : 'Max tier unlocked'}
+          onClick={() => navigate('/rewards')}
         />
         <StatCard icon={<Icon8 name="shield" size={24} />} label="KYC Status" color={kycI.color} delay={0.15} isDark={isDark} value={user?.kycStatus?.replace('_', ' ') ?? '-'} sub={kycI.label} onClick={() => navigate('/kyc')} />
       </div>
@@ -294,14 +213,22 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-xl leading-tight font-bold" style={{ color: '#1d2b44' }}>Spending Overview</h3>
-              <p className="text-xs mt-0.5" style={{ color: '#6c7f90' }}>Last 7 days</p>
+              <p className="text-xs mt-0.5" style={{ color: '#6c7f90' }}>This week</p>
             </div>
             <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: '#e8f1ea', color: '#4c6f7b' }}>
               Live analytics
             </span>
           </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: '#dcfce7', color: '#15803d' }}>
+              Total credit: {formatCurrency(weeklyCreditTotal)}
+            </span>
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: '#fee2e2', color: '#b91c1c' }}>
+              Total debit: {formatCurrency(weeklyDebitTotal)}
+            </span>
+          </div>
           <Suspense fallback={<Skeleton className="h-[180px] w-full" />}>
-            <SpendingOverviewChart data={spendingOverviewData} />
+            <SpendingOverviewChart data={weeklySpend} loading={txLoading} />
           </Suspense>
         </motion.div>
 
@@ -360,7 +287,7 @@ export default function DashboardPage() {
           <h3 className="text-sm font-bold" style={{ color: '#1d2b44' }}>Quick Actions</h3>
           <span className="text-[10px] font-semibold" style={{ color: '#98a6b6' }}>Fast access</span>
         </div>
-        <fieldset className="grid grid-cols-2 sm:grid-cols-4 gap-3" aria-label="Quick actions">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" role="group" aria-label="Quick actions">
           {([
             { icon: 'topup', label: 'Top Up', to: '/wallet', color: '#22c55e' },
             { icon: 'transfer', label: 'Transfer', to: '/wallet', color: '#6366f1' },
@@ -369,7 +296,7 @@ export default function DashboardPage() {
           ] as const).map((a, i) => (
             <motion.button
               key={a.label}
-              onClick={() => navigate(canAccessFinancialFeatures ? a.to : '/kyc')}
+              onClick={() => navigate(a.to)}
               className="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all"
               style={{ background: `${a.color}10`, border: `1px solid ${a.color}25`, color: a.color }}
               initial={{ opacity: 0, scale: 0.96 }}
@@ -383,7 +310,7 @@ export default function DashboardPage() {
               <span className="text-xs font-semibold" style={{ color: '#44566f' }}>{a.label}</span>
             </motion.button>
           ))}
-        </fieldset>
+        </div>
       </motion.div>
     </div>
   )

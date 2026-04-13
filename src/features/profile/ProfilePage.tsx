@@ -2,39 +2,19 @@ import { useState, useEffect, FormEvent, useRef } from 'react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useAppDispatch, useAppSelector, useNotify } from '../../shared/hooks'
-import { kycService, userService } from '../../services'
+import { kycService } from '../../core/api/kycService'
+import { userService } from '../../core/api/userService'
 import { getApiErrorMessage } from '../../shared/apiErrors'
 import { formatDate, getKycInfo } from '../../shared/utils'
 import type { UserProfile } from '../../types'
-import { updateCurrentUser, updateKycStatus } from '../../store/authSlice'
-import { digitsOnly, getFirstError, profilePhotoSchema, profileSchema } from '../../shared/validation'
+import { updateKycStatus } from '../../store/authSlice'
 
 const profilePhotoKey = (userId?: number) => `payvault-profile-photo:${userId ?? 'anon'}`
-type ProfileApiPayload = Partial<UserProfile> & { name?: string }
-const nameInputValue = (value: string) =>
-  Array.from(value).filter(char =>
-    (char >= 'A' && char <= 'Z') ||
-    (char >= 'a' && char <= 'z') ||
-    char === ' ' ||
-    char === '\'' ||
-    char === '-'
-  ).join('')
-
-const normalizeProfile = (payload: ProfileApiPayload, fallback?: UserProfile | null): UserProfile => ({
-  id: payload.id ?? fallback?.id ?? 0,
-  fullName: payload.fullName || payload.name || fallback?.fullName || '',
-  email: payload.email ?? fallback?.email ?? '',
-  phone: payload.phone ?? fallback?.phone,
-  role: payload.role ?? fallback?.role ?? 'USER',
-  kycStatus: payload.kycStatus ?? fallback?.kycStatus,
-  status: payload.status ?? fallback?.status,
-  createdAt: payload.createdAt ?? fallback?.createdAt,
-})
 
 const fileToDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
+    reader.onload = () => resolve(String(reader.result || ''))
     reader.onerror = () => reject(new Error('Failed to read selected image'))
     reader.readAsDataURL(file)
   })
@@ -67,9 +47,8 @@ export function ProfilePage() {
       ])
 
       const liveKyc = kycResp?.data?.status
-      const normalizedProfile = normalizeProfile(profileResp.data, user)
       const mergedProfile: UserProfile = {
-        ...normalizedProfile,
+        ...profileResp.data,
         kycStatus: liveKyc ?? profileResp.data.kycStatus ?? user?.kycStatus,
       }
 
@@ -89,17 +68,20 @@ export function ProfilePage() {
   const onPhotoPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !user?.id) return
-    const fileResult = profilePhotoSchema.safeParse(file)
-    if (!fileResult.success) {
-      toast.error(getFirstError(fileResult.error))
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file (JPG, PNG, WEBP).')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size should be up to 2MB.')
       return
     }
 
     try {
-      const url = await fileToDataUrl(fileResult.data)
+      const url = await fileToDataUrl(file)
       setPhotoDataUrl(url)
       localStorage.setItem(profilePhotoKey(user.id), url)
-      globalThis.dispatchEvent(new Event('payvault-profile-photo-updated'))
+      window.dispatchEvent(new Event('payvault-profile-photo-updated'))
       toast.success('Profile photo updated.')
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Could not update profile photo.'))
@@ -112,28 +94,29 @@ export function ProfilePage() {
     if (!user?.id) return
     localStorage.removeItem(profilePhotoKey(user.id))
     setPhotoDataUrl(null)
-    globalThis.dispatchEvent(new Event('payvault-profile-photo-updated'))
+    window.dispatchEvent(new Event('payvault-profile-photo-updated'))
     toast.success('Profile photo removed.')
   }
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
-    const profileResult = profileSchema.safeParse(form)
-    if (!profileResult.success) {
-      toast.error(getFirstError(profileResult.error))
+
+    const trimmedName = form.name.trim()
+    const normalizedPhone = form.phone.replace(/\D/g, '')
+    if (trimmedName.length < 2) {
+      toast.error('Please enter a valid full name.')
+      return
+    }
+    if (normalizedPhone && !/^[0-9]{10}$/.test(normalizedPhone)) {
+      toast.error('Phone number must be exactly 10 digits.')
       return
     }
 
     setSaving(true)
     try {
-      const { data } = await userService.updateProfile(user!.id, profileResult.data)
-      const normalizedProfile = normalizeProfile(data.data, user)
-      setProfile(normalizedProfile)
-      setForm({ name: normalizedProfile.fullName || '', phone: normalizedProfile.phone || '' })
-      dispatch(updateCurrentUser({
-        ...user!,
-        ...normalizedProfile,
-      }))
+      const { data } = await userService.updateProfile(user!.id, { name: trimmedName, phone: normalizedPhone })
+      setProfile(data.data)
+      setForm({ name: data.data.fullName || '', phone: data.data.phone || '' })
       setEditing(false)
       notify('success', 'Profile Updated', 'Your profile details were updated successfully.')
       toast.success('Profile saved.')
@@ -145,7 +128,7 @@ export function ProfilePage() {
   }
 
   const p = profile || user
-  const effectiveKycStatus = user?.kycStatus ?? p?.kycStatus ?? 'NOT_SUBMITTED'
+  const effectiveKycStatus = user?.kycStatus ?? p?.kycStatus
   const kycI = getKycInfo(effectiveKycStatus)
   const KycIcon = kycI.icon
   const initial = (p?.fullName?.[0] || 'U').toUpperCase()
@@ -199,19 +182,11 @@ export function ProfilePage() {
           <form onSubmit={save} className="space-y-4" noValidate>
             <div>
               <label htmlFor="pname" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Full Name</label>
-              <input
-                id="pname"
-                type="text"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: nameInputValue(e.target.value) }))}
-                className="input-field"
-                minLength={2}
-                maxLength={100}
-              />
+              <input id="pname" type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="input-field" minLength={2} maxLength={100} />
             </div>
             <div>
               <label htmlFor="pphone" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>Phone Number</label>
-              <input id="pphone" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: digitsOnly(e.target.value).slice(0, 10) }))} className="input-field" maxLength={10} placeholder="10 digit number" />
+              <input id="pphone" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} className="input-field" maxLength={10} placeholder="10 digit number" />
             </div>
             <button type="submit" disabled={saving} className="btn-primary py-2.5 text-sm">{saving ? 'Saving...' : 'Save Changes'}</button>
           </form>

@@ -2,10 +2,9 @@ import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { authService } from '../../services'
+import { authService } from '../../core/api/authService'
 import { getApiErrorMessage } from '../../shared/apiErrors'
 import { Icon8 } from '../../shared/components/Icon8'
-import { digitsOnly, emailSchema, forgotPasswordResetSchema, getFirstError, otpSchema } from '../../shared/validation'
 
 type Step = 0 | 1 | 2
 
@@ -34,15 +33,14 @@ export default function ForgotPasswordPage() {
 
   const sendOtp = async (e: FormEvent) => {
     e.preventDefault()
-    const emailResult = emailSchema.safeParse(email)
-    if (!emailResult.success) {
-      toast.error(getFirstError(emailResult.error))
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error('Enter a valid email address')
       return
     }
 
     setLoading(true)
     try {
-      await authService.forgotPasswordOtp(emailResult.data)
+      await authService.forgotPasswordOtp(email.trim())
       toast.success('OTP sent to your email')
       setStep(1)
     } catch (err) {
@@ -54,15 +52,14 @@ export default function ForgotPasswordPage() {
 
   const verifyOtp = async (e: FormEvent) => {
     e.preventDefault()
-    const otpResult = otpSchema.safeParse(otp)
-    if (!otpResult.success) {
-      toast.error(getFirstError(otpResult.error))
+    if (otp.length < 4) {
+      toast.error('Enter the OTP sent to your email')
       return
     }
 
     setLoading(true)
     try {
-      const { data } = await authService.forgotPasswordVerify(email.trim(), otpResult.data)
+      const { data } = await authService.forgotPasswordVerify(email.trim(), otp)
       setResetToken(data.resetToken)
       toast.success('OTP verified')
       setStep(2)
@@ -75,15 +72,22 @@ export default function ForgotPasswordPage() {
 
   const resetPassword = async (e: FormEvent) => {
     e.preventDefault()
-    const resetResult = forgotPasswordResetSchema.safeParse({ newPassword, confirmPassword })
-    if (!resetResult.success) {
-      toast.error(getFirstError(resetResult.error))
+    if (newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters')
+      return
+    }
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(newPassword)) {
+      toast.error('Use A-Z, a-z, 0-9 and @$!%*?& in password')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match')
       return
     }
 
     setLoading(true)
     try {
-      await authService.resetPassword(resetToken, resetResult.data.newPassword)
+      await authService.resetPassword(resetToken, newPassword)
       toast.success('Password updated. Please sign in.')
       navigate('/login')
     } catch (err) {
@@ -163,7 +167,7 @@ export default function ForgotPasswordPage() {
                 autoFocus
                 placeholder="Enter OTP"
                 value={otp}
-                onChange={(e) => setOtp(digitsOnly(e.target.value))}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                 className="input-field text-center text-2xl font-mono tracking-[0.35em]"
               />
             </div>
@@ -226,9 +230,9 @@ export default function ForgotPasswordPage() {
               {newPassword && (
                 <div className="mt-2">
                   <div className="flex gap-1 mb-1.5">
-                    {['strength-1', 'strength-2', 'strength-3', 'strength-4'].map((key, i) => (
+                    {[0, 1, 2, 3].map(i => (
                       <div
-                        key={key}
+                        key={i}
                         className="h-1.5 flex-1 rounded-full"
                         style={{ background: i < strength ? strengthColor : 'var(--border)' }}
                       />

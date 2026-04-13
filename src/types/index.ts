@@ -26,14 +26,8 @@ export interface LoginRequest { email: string; password: string }
 export interface SignupRequest { fullName: string; email: string; phone: string; password: string }
 export interface VerifyOtpRequest { email: string; otp: string }
 
-export interface RecipientSearchItem {
-  id: number
-  fullName: string
-  phone?: string
-}
-
 // ─── Wallet ───────────────────────────────────────────────────────────────────
-export type TxStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'REVERSED'
+export type TxStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'REVERSED'
 export type TxType = 'TOPUP' | 'TRANSFER' | 'WITHDRAW' | 'CASHBACK' | 'REDEEM'
 export type LedgerType = 'CREDIT' | 'DEBIT'
 
@@ -84,6 +78,15 @@ export interface TransferRequest {
   description?: string
 }
 
+export interface TransferRecipientResponse {
+  id?: number
+  userId?: number
+  name?: string
+  fullName?: string
+  email?: string
+  phone?: string
+}
+
 export interface RazorpayOrder {
   id: string
   /** Some backends mirror Razorpay’s id under this key */
@@ -117,19 +120,6 @@ export interface RewardItem {
   tierRequired?: RewardTier
   stock: number
   active: boolean
-  expiryDays?: number
-}
-
-export interface AdminCatalogItemPayload {
-  name: string
-  description?: string
-  pointsRequired: number
-  type: RewardItemType
-  cashbackAmount?: number
-  tierRequired?: RewardTier
-  stock: number
-  active: boolean
-  expiryDays?: number
 }
 
 export interface RewardTransaction {
@@ -250,16 +240,9 @@ export interface RazorpayOptions {
   modal?: { ondismiss?: () => void }
   config?: {
     display?: {
-      blocks?: Record<string, {
-        name: string
-        instruments: Array<{
-          method: 'card' | 'upi' | 'wallet' | 'netbanking'
-        }>
-      }>
+      blocks?: Record<string, { name: string; instruments: Array<{ method: string }> }>
       sequence?: string[]
-      preferences?: {
-        show_default_blocks?: boolean
-      }
+      preferences?: { show_default_blocks?: boolean }
     }
   }
 }
@@ -270,13 +253,19 @@ export interface RazorpayPaymentResponse {
   razorpay_signature: string
 }
 
-export interface RazorpayPaymentFailure {
+export interface PaymentFailureRequest {
+  razorpayOrderId: string
+  razorpayPaymentId?: string
+  reason: string
+}
+
+export interface RazorpayFailureResponse {
   error?: {
     code?: string
     description?: string
-    reason?: string
     source?: string
     step?: string
+    reason?: string
     metadata?: {
       order_id?: string
       payment_id?: string
@@ -287,5 +276,5 @@ export interface RazorpayPaymentFailure {
 export interface RazorpayInstance {
   open(): void
   close(): void
-  on(event: string, handler: (response?: RazorpayPaymentFailure) => void): void
+  on(event: string, handler: (response: RazorpayFailureResponse) => void): void
 }

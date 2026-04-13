@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { WalletBalance, Transaction, LedgerEntry, PageResponse, TransferRequest } from '../types'
-import { walletService } from '../services'
+import { walletService } from '../core/api/walletService'
 import { getApiErrorMessage } from '../shared/apiErrors'
 import type { RootState } from './store'
 
@@ -48,17 +48,7 @@ export const createPaymentOrder = createAsyncThunk('payment/create-order', async
 const walletSlice = createSlice({
   name: 'wallet',
   initialState: { balance: null, transactions: null, ledger: null, loading: false, txLoading: false, error: null } as WalletState,
-  reducers: {
-    clearError(s) { s.error = null },
-    resetWalletState(s) {
-      s.balance = null
-      s.transactions = null
-      s.ledger = null
-      s.loading = false
-      s.txLoading = false
-      s.error = null
-    },
-  },
+  reducers: { clearError(s) { s.error = null } },
   extraReducers: (b) => {
     b.addCase(fetchBalance.pending, (s) => { s.loading = true })
     b.addCase(fetchBalance.fulfilled, (s, { payload }) => { s.loading = false; s.balance = payload })
@@ -69,5 +59,5 @@ const walletSlice = createSlice({
     b.addCase(fetchLedger.fulfilled, (s, { payload }) => { s.ledger = payload })
   },
 })
-export const { clearError: clearWalletError, resetWalletState } = walletSlice.actions
+export const { clearError: clearWalletError } = walletSlice.actions
 export default walletSlice.reducer

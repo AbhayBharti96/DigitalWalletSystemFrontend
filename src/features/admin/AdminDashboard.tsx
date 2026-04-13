@@ -3,17 +3,11 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { useAppSelector } from '../../shared/hooks'
-import { adminService } from '../../services'
+import { adminService } from '../../core/api/adminService'
 import type { AdminDashboard as AdminDashboardType } from '../../types'
 import { Icon8 } from '../../shared/components/Icon8'
 
 const COLORS = ['#22c55e', '#6366f1', '#f59e0b', '#ef4444']
-
-type ChartTooltipProps = {
-  active?: boolean
-  payload?: Array<{ name?: string; value?: number }>
-  label?: string
-}
 
 const S: React.FC<{ icon: React.ReactNode; label: string; value?: number; color?: string; delay?: number }> =
   ({ icon, label, value, color = 'var(--brand)', delay = 0 }) => (
@@ -25,16 +19,6 @@ const S: React.FC<{ icon: React.ReactNode; label: string; value?: number; color?
     <div className="text-2xl font-display font-bold" style={{ color: 'var(--text-primary)' }}>{value?.toLocaleString() ?? '—'}</div>
   </motion.div>
 )
-
-const Tip = ({ active, payload, label }: ChartTooltipProps) => {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="card px-3 py-2 text-xs">
-      <div style={{ color: 'var(--text-muted)' }}>{label || payload[0].name}</div>
-      <div className="font-bold" style={{ color: 'var(--brand)' }}>{payload[0].value}</div>
-    </div>
-  )
-}
 
 export function AdminDashboard() {
   const { user } = useAppSelector(s => s.auth)
@@ -52,6 +36,11 @@ export function AdminDashboard() {
   const growthData = stats ? [
     { l: 'Today', v: stats.newUsersToday }, { l: 'This Week', v: stats.newUsersThisWeek }, { l: 'This Month', v: stats.newUsersThisMonth },
   ] : []
+  const Tip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null
+    return <div className="card px-3 py-2 text-xs"><div style={{ color: 'var(--text-muted)' }}>{label || payload[0].name}</div><div className="font-bold" style={{ color: 'var(--brand)' }}>{payload[0].value}</div></div>
+  }
+
   return (
     <div className="p-4 lg:p-6 space-y-5 max-w-5xl mx-auto">
       <div>
@@ -81,7 +70,7 @@ export function AdminDashboard() {
         </motion.div>
         <motion.div className="card p-5" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
           <h3 className="font-display font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>KYC Status</h3>
-          <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={kycData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="value">{kycData.map((item, i) => <Cell key={item.name} fill={COLORS[i]} />)}</Pie><Tooltip content={<Tip />} /></PieChart></ResponsiveContainer>
+          <ResponsiveContainer width="100%" height={160}><PieChart><Pie data={kycData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="value">{kycData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}</Pie><Tooltip content={<Tip />} /></PieChart></ResponsiveContainer>
           <div className="space-y-1 mt-2">{kycData.map((d, i) => (<div key={d.name} className="flex items-center justify-between text-xs"><div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ background: COLORS[i] }} /><span style={{ color: 'var(--text-secondary)' }}>{d.name}</span></div><span className="font-medium" style={{ color: 'var(--text-primary)' }}>{d.value}</span></div>))}</div>
         </motion.div>
       </div>

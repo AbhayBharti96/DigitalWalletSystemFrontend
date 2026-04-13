@@ -146,3 +146,59 @@ export const generateKey = () => `${Date.now()}-${randomToken()}`
 export const calcPoints = (amount: number) => Math.floor(amount / 100)
 
 export const clamp = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max)
+
+export type SpendingPoint = { d: string; v: number; credit: number; debit: number }
+
+const toLocalDateKey = (date: Date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+export const buildWeeklySpendingSeries = (
+  transactions: Transaction[],
+  currentUserId?: number,
+  now = new Date(),
+): SpendingPoint[] => {
+  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const monday = new Date(now)
+  const currentDay = monday.getDay()
+  const offsetToMonday = currentDay === 0 ? -6 : 1 - currentDay
+  monday.setDate(monday.getDate() + offsetToMonday)
+  monday.setHours(0, 0, 0, 0)
+
+  const weeklyBuckets = labels.map((label, index) => {
+    const date = new Date(monday)
+    date.setDate(monday.getDate() + index)
+    return {
+      d: label,
+      v: 0,
+      credit: 0,
+      debit: 0,
+      key: toLocalDateKey(date),
+    }
+  })
+
+  for (const transaction of transactions) {
+    if (transaction.status !== 'SUCCESS') {
+      continue
+    }
+
+    const createdAt = new Date(transaction.createdAt)
+    if (Number.isNaN(createdAt.getTime())) continue
+
+    const key = toLocalDateKey(createdAt)
+    const bucket = weeklyBuckets.find((point) => point.key === key)
+    if (!bucket) continue
+
+    if (isCreditForUser(transaction, currentUserId)) {
+      bucket.credit += transaction.amount
+    } else {
+      bucket.debit += transaction.amount
+      bucket.v += transaction.amount
+    }
+  }
+
+  return weeklyBuckets.map(({ d, v, credit, debit }) => ({ d, v, credit, debit }))
+}

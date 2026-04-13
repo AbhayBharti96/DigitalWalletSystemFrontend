@@ -10,11 +10,11 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 export const Modal: React.FC<ModalProps> = ({ open, onClose, title, children, size = 'md' }) => {
-  const widths = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg' }
+  const widths = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-lg', xl: 'max-w-6xl' }
   return (
     <AnimatePresence>
       {open && (
@@ -227,6 +227,7 @@ export const StatusBadge: React.FC<{ status?: string | null }> = ({ status }) =>
     APPROVED: { bg: '#dcfce7', color: '#16a34a' }, ACTIVE: { bg: '#dcfce7', color: '#16a34a' },
     PENDING: { bg: '#fef3c7', color: '#d97706' },
     FAILED: { bg: '#fee2e2', color: '#dc2626' }, REJECTED: { bg: '#fee2e2', color: '#dc2626' },
+    CANCELLED: { bg: '#e0f2fe', color: '#0369a1' },
     BLOCKED: { bg: '#fee2e2', color: '#dc2626' },
     REVERSED: { bg: '#ede9fe', color: '#7c3aed' },
     ADMIN: { bg: '#dcfce7', color: '#166534' },

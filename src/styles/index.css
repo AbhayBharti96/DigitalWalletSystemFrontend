@@ -27,6 +27,9 @@
   --shadow-md: 0 16px 36px -20px rgb(15 23 42 / 0.34), 0 6px 14px -6px rgb(15 23 42 / 0.16);
   --shadow-lg: 0 24px 52px -26px rgb(15 23 42 / 0.4), 0 10px 24px -10px rgb(15 23 42 / 0.2);
   --shadow-brand: 0 8px 24px rgba(34,197,94,0.25);
+  --glass-border: rgba(148, 163, 184, 0.28);
+  --glass-border-strong: rgba(34, 197, 94, 0.28);
+  --glass-sheen: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.35));
 }
 
 .dark {
@@ -51,6 +54,9 @@
   --shadow-md: 0 4px 12px rgb(0 0 0/0.4);
   --shadow-lg: 0 10px 30px rgb(0 0 0/0.5);
   --shadow-brand: 0 8px 32px rgba(34,197,94,0.2);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-strong: rgba(74, 222, 128, 0.32);
+  --glass-sheen: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05));
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────── */
@@ -101,31 +107,73 @@ body {
 
 .btn-primary {
   @apply px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2;
-  background: var(--brand);
-  --tw-ring-color: var(--brand);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02)),
+    linear-gradient(135deg, var(--brand), var(--brand-hover));
+  border: 1px solid var(--glass-border-strong);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    0 10px 24px -18px rgba(15, 23, 42, 0.5),
+    var(--shadow-brand);
+  focus-ring-color: var(--brand);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
-.btn-primary:hover:not(:disabled) { background: var(--brand-hover); box-shadow: var(--shadow-brand); }
+.btn-primary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--glass-border-strong) 65%, white);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.24),
+    0 14px 28px -18px rgba(15, 23, 42, 0.55),
+    var(--shadow-brand);
+}
 .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-secondary {
   @apply px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2;
-  background: var(--bg-card);
+  background:
+    var(--glass-sheen),
+    color-mix(in srgb, var(--bg-card) 76%, transparent);
   color: var(--text-primary);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.16),
+    0 10px 24px -20px rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
-.btn-secondary:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--glass-border-strong);
+  color: var(--brand);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    0 14px 28px -22px rgba(15, 23, 42, 0.55);
+}
 
 .btn-danger {
   @apply px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95;
-  background: #fee2e2;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.2)),
+    #fee2e2;
   color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.18),
+    0 10px 24px -20px rgba(127, 29, 29, 0.28);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
-.dark .btn-danger { background: rgba(239,68,68,0.15); color: #f87171; }
+.dark .btn-danger {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+    rgba(239,68,68,0.15);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.22);
+}
 
 .input-field {
   @apply w-full px-4 py-3 rounded-xl text-sm outline-none transition-all duration-200 focus:ring-2;
   background: var(--bg-primary);
-  border: 1.5px solid var(--border-strong);
+  border: 1.5px solid var(--border);
   color: var(--text-primary);
   --tw-ring-color: rgba(34,197,94,0.25);
 }
@@ -136,23 +184,27 @@ body {
 input[type="date"].input-field {
   color-scheme: light;
 }
-input[type="date"].input-field::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.8;
-}
-.date-input-with-icon::-webkit-calendar-picker-indicator {
-  opacity: 0;
-  width: 0;
-}
+
 .dark input[type="date"].input-field {
   color-scheme: dark;
 }
-.dark input[type="date"].input-field::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.2);
-  opacity: 0.9;
-}
-.dark .date-input-with-icon::-webkit-calendar-picker-indicator {
+
+input[type="date"].date-input-with-icon::-webkit-calendar-picker-indicator {
   opacity: 0;
+  cursor: pointer;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+input[type="date"].date-input-with-icon::-moz-calendar-picker-indicator {
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dark input[type="date"].date-input-with-icon::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
 }
 
 /* Hide native browser password reveal controls when we render our own eye toggle */

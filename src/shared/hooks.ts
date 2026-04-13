@@ -5,7 +5,7 @@ import type { RootState, AppDispatch } from '../store/store'
 import { toggleTheme } from '../store/themeSlice'
 import { logout } from '../store/authSlice'
 import { addNotification } from '../store/notificationSlice'
-import { authService } from '../services'
+import { authService } from '../core/api/authService'
 import type { NotifType } from '../types'
 
 export const useAppDispatch = () => useDispatch<AppDispatch>()
@@ -26,9 +26,7 @@ export const useAuth = () => {
     try {
       const rt = sessionStorage.getItem('refreshToken') || localStorage.getItem('refreshToken')
       if (rt) await authService.logout(rt)
-    } catch {
-      // Ignore logout API failures and continue clearing local auth state.
-    }
+    } catch (_) {}
     dispatch(logout())
     navigate('/login')
   }

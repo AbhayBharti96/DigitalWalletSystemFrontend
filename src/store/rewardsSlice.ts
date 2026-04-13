@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import type { RewardSummary, RewardItem, RewardTransaction } from '../types'
-import { rewardsService } from '../services'
+import { rewardsService } from '../core/api/rewardsService'
 import { getApiErrorMessage } from '../shared/apiErrors'
 import type { RootState } from './store'
 
@@ -41,14 +41,14 @@ const tierRank = (tier?: RewardSummary['tier']) => (tier ? TIER_RANK[tier] : 0)
 const maxTierStorageKey = (userId: number) => `payvault:max-reward-tier:${userId}`
 
 const readMaxTier = (userId: number): RewardSummary['tier'] | undefined => {
-  if (typeof globalThis.window === 'undefined') return undefined
+  if (typeof window === 'undefined') return undefined
   const v = localStorage.getItem(maxTierStorageKey(userId))
   if (v === 'SILVER' || v === 'GOLD' || v === 'PLATINUM') return v
   return undefined
 }
 
 const writeMaxTier = (userId: number, tier: RewardSummary['tier']): void => {
-  if (typeof globalThis.window === 'undefined') return
+  if (typeof window === 'undefined') return
   localStorage.setItem(maxTierStorageKey(userId), tier)
 }
 
@@ -120,16 +120,7 @@ export const redeemPointsThunk = createAsyncThunk('rewards/redeemPoints', async 
 const rewardsSlice = createSlice({
   name: 'rewards',
   initialState: { summary: null, catalog: [], transactions: [], loading: false, error: null } as RewardsState,
-  reducers: {
-    clearError(s) { s.error = null },
-    resetRewardsState(s) {
-      s.summary = null
-      s.catalog = []
-      s.transactions = []
-      s.loading = false
-      s.error = null
-    },
-  },
+  reducers: { clearError(s) { s.error = null } },
   extraReducers: (b) => {
     b.addCase(fetchRewardSummary.pending, (s) => { s.loading = true })
     b.addCase(fetchRewardSummary.fulfilled, (s, { payload }) => {
@@ -141,5 +132,5 @@ const rewardsSlice = createSlice({
     b.addCase(fetchRewardTransactions.fulfilled, (s, { payload }) => { s.transactions = payload })
   },
 })
-export const { clearError: clearRewardsError, resetRewardsState } = rewardsSlice.actions
+export const { clearError: clearRewardsError } = rewardsSlice.actions
 export default rewardsSlice.reducer

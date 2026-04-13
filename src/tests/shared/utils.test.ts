@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildWeeklySpendingSeries,
   calcPoints,
   clamp,
   formatCurrency,
-  generateKey,
   getKycInfo,
   getTierStyle,
   getTransferCounterparty,
@@ -85,9 +85,50 @@ describe('shared/utils', () => {
     expect(clamp(22, 1, 10)).toBe(10)
   })
 
-  it('generates a timestamp-prefixed key with a random token', () => {
-    const key = generateKey()
+  it('builds weekly spending from successful outgoing transactions', () => {
+    const transactions: Transaction[] = [
+      {
+        id: 1,
+        senderId: 9,
+        receiverId: 20,
+        amount: 500,
+        status: 'SUCCESS',
+        type: 'TRANSFER',
+        createdAt: '2026-04-13T09:00:00.000Z',
+      },
+      {
+        id: 2,
+        senderId: 3,
+        receiverId: 9,
+        amount: 700,
+        status: 'SUCCESS',
+        type: 'TRANSFER',
+        createdAt: '2026-04-14T10:00:00.000Z',
+      },
+      {
+        id: 3,
+        amount: 200,
+        status: 'FAILED',
+        type: 'WITHDRAW',
+        createdAt: '2026-04-15T10:00:00.000Z',
+      },
+      {
+        id: 4,
+        amount: 900,
+        status: 'SUCCESS',
+        type: 'WITHDRAW',
+        createdAt: '2026-04-16T10:00:00.000Z',
+      },
+    ]
 
-    expect(key).toMatch(/^\d+-[a-z0-9]+$/)
+    expect(buildWeeklySpendingSeries(transactions, 9, new Date('2026-04-16T12:00:00.000Z'))).toEqual([
+      { d: 'Mon', v: 500, credit: 0, debit: 500 },
+      { d: 'Tue', v: 0, credit: 700, debit: 0 },
+      { d: 'Wed', v: 0, credit: 0, debit: 0 },
+      { d: 'Thu', v: 900, credit: 0, debit: 900 },
+      { d: 'Fri', v: 0, credit: 0, debit: 0 },
+      { d: 'Sat', v: 0, credit: 0, debit: 0 },
+      { d: 'Sun', v: 0, credit: 0, debit: 0 },
+    ])
   })
 })
